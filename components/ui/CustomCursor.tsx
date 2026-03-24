@@ -1,24 +1,16 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 
 export default function CustomCursor() {
-  const [isPointerFine, setIsPointerFine] = useState(false);
+  const cursorRef = useRef<HTMLDivElement>(null);
+  const innerRef  = useRef<HTMLDivElement>(null);
   const [mounted,       setMounted]       = useState(false);
-  const [isVisible,     setIsVisible]     = useState(false);
-  const [isHovered,     setIsHovered]     = useState(false);
-  const isHoveredRef = useRef(false);
+  const [isPointerFine, setIsPointerFine] = useState(false);
 
-  const mouseX = useMotionValue(-300);
-  const mouseY = useMotionValue(-300);
-  const springX = useSpring(mouseX, { stiffness: 550, damping: 32 });
-  const springY = useSpring(mouseY, { stiffness: 550, damping: 32 });
-
-  // Hotspot: tip of index finger at SVG coords (19, 2) in a 44×54 image
-  // Bake offset into MotionValues to avoid translateX/translateY conflict
-  const cursorX = useTransform(springX, v => v - 19);
-  const cursorY = useTransform(springY, v => v - 2);
+  const pos     = useRef({ x: -300, y: -300 });
+  const cur     = useRef({ x: -300, y: -300 });
+  const visible = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -32,10 +24,14 @@ export default function CustomCursor() {
   useEffect(() => {
     if (!isPointerFine) return;
 
+    let raf: number;
+
     const onMove = (e: MouseEvent) => {
-      mouseX.set(e.clientX);
-      mouseY.set(e.clientY);
-      setIsVisible(true);
+      pos.current = { x: e.clientX, y: e.clientY };
+      if (!visible.current) {
+        visible.current = true;
+        if (cursorRef.current) cursorRef.current.style.opacity = "1";
+      }
     };
 
     const onOver = (e: MouseEvent) => {
@@ -45,28 +41,46 @@ export default function CustomCursor() {
         t.closest("a")             !== null ||
         t.closest("button")        !== null ||
         t.closest("[data-cursor]") !== null;
-      if (h !== isHoveredRef.current) {
-        isHoveredRef.current = h;
-        setIsHovered(h);
+      if (innerRef.current) {
+        innerRef.current.style.transform = h
+          ? "scale(1.25) rotate(-14deg)"
+          : "scale(1) rotate(0deg)";
       }
     };
 
-    const onLeave = () => setIsVisible(false);
+    const onLeave = () => {
+      visible.current = false;
+      if (cursorRef.current) cursorRef.current.style.opacity = "0";
+    };
+
+    const tick = () => {
+      cur.current.x += (pos.current.x - cur.current.x) * 0.18;
+      cur.current.y += (pos.current.y - cur.current.y) * 0.18;
+      if (cursorRef.current) {
+        cursorRef.current.style.transform =
+          `translate(${cur.current.x - 19}px, ${cur.current.y - 2}px)`;
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
 
     document.addEventListener("mousemove",  onMove);
     document.addEventListener("mouseover",  onOver);
     document.documentElement.addEventListener("mouseleave", onLeave);
+
     return () => {
+      cancelAnimationFrame(raf);
       document.removeEventListener("mousemove",  onMove);
       document.removeEventListener("mouseover",  onOver);
       document.documentElement.removeEventListener("mouseleave", onLeave);
     };
-  }, [isPointerFine, mouseX, mouseY]);
+  }, [isPointerFine]);
 
   if (!mounted || !isPointerFine) return null;
 
   return (
-    <motion.div
+    <div
+      ref={cursorRef}
       aria-hidden="true"
       style={{
         position:      "fixed",
@@ -74,24 +88,23 @@ export default function CustomCursor() {
         left:          0,
         zIndex:        9999,
         pointerEvents: "none",
-        x:             cursorX,
-        y:             cursorY,
+        opacity:       0,
+        transform:     "translate(-300px, -300px)",
+        transition:    "opacity 150ms ease",
+        willChange:    "transform",
       }}
-      animate={{ opacity: isVisible ? 1 : 0 }}
-      transition={{ duration: 0.15 }}
     >
-      <motion.div
-        animate={{ scale: isHovered ? 1.25 : 1.0, rotate: isHovered ? -14 : 0 }}
-        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+      <div
+        ref={innerRef}
+        style={{ transition: "transform 180ms cubic-bezier(0.16, 1, 0.3, 1)" }}
       >
         <GloveIcon />
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   );
 }
 
-// ── Cartoon white glove — inline SVG, no external file ───────────────────────
-// Render order: fingers first → palm on top (covers finger bases) → cuff on top
+// ── Cartoon white glove — inline SVG ─────────────────────────────────────────
 
 function GloveIcon() {
   return (
@@ -102,25 +115,16 @@ function GloveIcon() {
       xmlns="http://www.w3.org/2000/svg"
       style={{ display: "block", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.65))" }}
     >
-      {/* Fingers (behind palm) */}
       <rect x="14" y="2"  width="10" height="27" rx="5"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
       <rect x="24" y="7"  width="9"  height="22" rx="4.5" fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
       <rect x="33" y="11" width="8"  height="18" rx="4"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
       <rect x="0"  y="17" width="14" height="16" rx="6"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
-
-      {/* Palm — on top, white fill covers finger bases */}
       <rect x="2"  y="26" width="39" height="18" rx="7"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
-
-      {/* Cuff */}
       <ellipse cx="21.5" cy="45" rx="13" ry="5.5"          fill="#ece6db" stroke="#1a1a1a" strokeWidth="1.5"/>
       <rect x="9" y="41" width="25" height="5"              fill="white"   stroke="none"/>
-
-      {/* Knuckle dots */}
       <circle cx="15.5" cy="33" r="1.8" fill="#dcd6cc"/>
       <circle cx="23"   cy="33" r="1.8" fill="#dcd6cc"/>
       <circle cx="30"   cy="33" r="1.8" fill="#dcd6cc"/>
-
-      {/* Cuff button */}
       <circle cx="21.5" cy="46" r="2.8" fill="none" stroke="#b0a898" strokeWidth="1"/>
       <circle cx="21.5" cy="46" r="0.9" fill="#b0a898"/>
     </svg>
