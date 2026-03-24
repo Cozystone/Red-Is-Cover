@@ -69,13 +69,13 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
     const navWy = (1 - navButtonPos.y * 2)        * (viewport.height / 2)
 
     if (gunState === 'dropping') {
-      // ── Scale ─────────────────────────────────────────────────────────
-      g.scale.setScalar(base * 1.6)
+      // ── Scale: X flipped for mirror effect ───────────────────────────
+      g.scale.set(-base * 1.6, base * 1.6, base * 1.6)
 
       // ── First frame: snap to start position far above viewport ───────
       if (!dropReady.current) {
         g.position.set(navWx, viewport.height, 0)
-        g.rotation.set(0, -Math.PI / 2, 0)
+        g.rotation.set(0, Math.PI / 2, 0)
         dropReady.current = true
       }
 
@@ -85,8 +85,8 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       g.position.y += (targetY - g.position.y) * 0.07
       g.position.z  = 0
 
-      // ── Flipped side view ─────────────────────────────────────────────
-      g.rotation.set(0, -Math.PI / 2, 0)
+      // ── Side view, mirrored on X ──────────────────────────────────────
+      g.rotation.set(0, Math.PI / 2, 0)
 
     } else if (gunState === 'aiming') {
       // ── Scale: medium — gun follows cursor ────────────────────────────
