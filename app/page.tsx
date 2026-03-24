@@ -1,5 +1,6 @@
 import Navigation from "@/components/Navigation";
 import Hero from "@/components/sections/Hero";
+import Banner from "@/components/sections/Banner";
 import Manifesto from "@/components/sections/Manifesto";
 import Works from "@/components/sections/Works";
 import Archive from "@/components/sections/Archive";
@@ -13,9 +14,10 @@ export default function Home() {
       <Navigation />
       <main>
         <Hero />
+        <Banner />
         <Manifesto />
-        <Works /> {/* Built by Motion agent */}
-        <Archive /> {/* Built by Motion agent */}
+        <Works />
+        <Archive />
         <About />
         <Contact />
       </main>
