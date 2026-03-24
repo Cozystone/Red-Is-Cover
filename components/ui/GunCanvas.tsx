@@ -80,7 +80,7 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       }
 
       // ── Drop straight down — x locked, y eases to upper-screen rest ──
-      const targetY = viewport.height * 0.25
+      const targetY = viewport.height * 0.42
       g.position.x  = navWx
       g.position.y += (targetY - g.position.y) * 0.07
       g.position.z  = 0
