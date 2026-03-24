@@ -1,107 +1,118 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { motion, useMotionValue, useSpring } from 'framer-motion'
+import { useEffect, useState, useRef } from "react";
+import { motion, useMotionValue, useSpring } from "framer-motion";
 
 export default function CustomCursor() {
-  // Track whether the cursor is in a hover state
-  const [isHovered, setIsHovered] = useState(false)
-  // Track whether the cursor is visible at all (hidden until first mouse move)
-  const [isVisible, setIsVisible] = useState(false)
-  // Track mobile: if window width < 768 we skip rendering entirely
-  const [isMobile, setIsMobile] = useState(false)
+  // Whether we have confirmed a pointer:fine device (not touch)
+  const [isPointerFine, setIsPointerFine] = useState(false);
+  // Only render after mount so SSR never outputs the cursor
+  const [mounted, setMounted] = useState(false);
+  // Whether the orb is in its expanded hover state
+  const [isHovered, setIsHovered] = useState(false);
+  // Hide until first mouse movement
+  const [isVisible, setIsVisible] = useState(false);
 
-  // Raw mouse position values
-  const mouseX = useMotionValue(-100)
-  const mouseY = useMotionValue(-100)
+  // Raw mouse position — updated immediately
+  const mouseX = useMotionValue(-100);
+  const mouseY = useMotionValue(-100);
 
-  // Smoothed spring values that trail behind the cursor
-  const springX = useSpring(mouseX, { stiffness: 400, damping: 28 })
-  const springY = useSpring(mouseY, { stiffness: 400, damping: 28 })
+  // Smoothed spring values that trail the raw position
+  const springX = useSpring(mouseX, { stiffness: 500, damping: 30 });
+  const springY = useSpring(mouseY, { stiffness: 500, damping: 30 });
 
-  useEffect(() => {
-    // Detect mobile on mount and on resize
-    function checkMobile() {
-      setIsMobile(window.innerWidth < 768)
-    }
-    checkMobile()
-    window.addEventListener('resize', checkMobile)
-    return () => window.removeEventListener('resize', checkMobile)
-  }, [])
+  // Use a ref so event handlers always see the latest hovered state
+  const isHoveredRef = useRef(false);
 
   useEffect(() => {
-    if (isMobile) return
+    setMounted(true);
+    // Check pointer precision — coarse means touch/stylus without fine pointer
+    const mq = window.matchMedia("(pointer: coarse)");
+    setIsPointerFine(!mq.matches);
+
+    const onChange = (e: MediaQueryListEvent) => setIsPointerFine(!e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isPointerFine) return;
 
     function onMouseMove(e: MouseEvent) {
-      mouseX.set(e.clientX)
-      mouseY.set(e.clientY)
-      if (!isVisible) setIsVisible(true)
+      mouseX.set(e.clientX);
+      mouseY.set(e.clientY);
+      if (!isVisible) setIsVisible(true);
     }
 
     function onMouseOver(e: MouseEvent) {
-      const target = e.target as Element
-      if (!target) return
+      const target = e.target as Element | null;
+      if (!target) return;
 
-      // Detect hoverable elements: links, buttons, or elements with cursor-hover class
-      const isHoverable =
-        target.closest('a') !== null ||
-        target.closest('button') !== null ||
-        target.closest('[data-cursor="hover"]') !== null ||
-        target.closest('.cursor-hover') !== null
+      const hoverable =
+        target.closest("a")                      !== null ||
+        target.closest("button")                 !== null ||
+        target.closest("[data-cursor]")           !== null ||
+        target.closest("[data-cursor='hover']")   !== null;
 
-      setIsHovered(isHoverable)
+      if (hoverable !== isHoveredRef.current) {
+        isHoveredRef.current = hoverable;
+        setIsHovered(hoverable);
+      }
     }
 
     function onMouseLeave() {
-      setIsVisible(false)
+      setIsVisible(false);
     }
 
-    document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseover', onMouseOver)
-    document.documentElement.addEventListener('mouseleave', onMouseLeave)
+    document.addEventListener("mousemove",  onMouseMove);
+    document.addEventListener("mouseover",  onMouseOver);
+    document.documentElement.addEventListener("mouseleave", onMouseLeave);
 
     return () => {
-      document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseover', onMouseOver)
-      document.documentElement.removeEventListener('mouseleave', onMouseLeave)
-    }
-  }, [isMobile, isVisible, mouseX, mouseY])
+      document.removeEventListener("mousemove",  onMouseMove);
+      document.removeEventListener("mouseover",  onMouseOver);
+      document.documentElement.removeEventListener("mouseleave", onMouseLeave);
+    };
+  }, [isPointerFine, isVisible, mouseX, mouseY]);
 
-  // On mobile: render nothing
-  if (isMobile) return null
-
-  // Cursor dimensions
-  const size = isHovered ? 32 : 12
+  // Do not render on SSR or touch devices
+  if (!mounted || !isPointerFine) return null;
 
   return (
     <motion.div
-      className="pointer-events-none fixed top-0 left-0 z-[9999]"
+      aria-hidden="true"
       style={{
-        x: springX,
-        y: springY,
-        translateX: '-50%',
-        translateY: '-50%',
-        opacity: isVisible ? 1 : 0,
+        position:       "fixed",
+        top:            0,
+        left:           0,
+        zIndex:         9999,
+        pointerEvents:  "none",
+        x:              springX,
+        y:              springY,
+        translateX:     "-50%",
+        translateY:     "-50%",
+        opacity:        isVisible ? 1 : 0,
+        transition:     "opacity 200ms ease",
       }}
     >
       <motion.div
         animate={{
-          width: size,
-          height: size,
-          borderColor: isHovered ? '#C41E1E' : '#0A0A0A',
+          width:       isHovered ? 36 : 10,
+          height:      isHovered ? 36 : 10,
+          borderColor: isHovered ? "#D91C1C" : "#060606",
         }}
         transition={{
-          duration: 0.08,
-          ease: 'easeOut',
+          width:       { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+          height:      { duration: 0.2, ease: [0.16, 1, 0.3, 1] },
+          borderColor: { duration: 0.15, ease: "easeOut" },
         }}
         style={{
-          borderRadius: '50%',
-          border: '1px solid #0A0A0A',
-          backgroundColor: 'transparent',
-          // Ensure crisp rendering
-          willChange: 'width, height, border-color',
+          borderRadius:    "50%",
+          border:          "1.5px solid #060606",
+          backgroundColor: "transparent",
+          willChange:      "width, height, border-color",
         }}
       />
     </motion.div>
-  )
+  );
 }

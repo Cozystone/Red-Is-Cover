@@ -3,8 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "ANSEO — Creative Direction",
-  description:
-    "A creative portfolio exploring the intersection of humanity, visual concept, and editorial direction.",
+  description: "A search for humanity in a cold, accelerating age.",
   openGraph: {
     title: "ANSEO — Creative Direction",
     description: "A search for humanity in a cold, accelerating age.",
@@ -12,11 +11,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="h-full">
       <head>
@@ -27,16 +22,7 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body
-        className="min-h-full antialiased"
-        style={{
-          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-          backgroundColor: "var(--color-ground)",
-          color: "var(--color-void)",
-        }}
-      >
-        {children}
-      </body>
+      <body>{children}</body>
     </html>
   );
 }

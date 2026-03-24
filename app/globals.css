@@ -1,83 +1,59 @@
 @import "tailwindcss";
 
-/* ─── Design Tokens ──────────────────────────────────────────────────────── */
-:root {
-  /* Colors */
-  --color-ground:   #FAF8F5;
-  --color-cream:    #F5F0E8;
-  --color-sky:      #C8D8E4;
-  --color-ash:      #9A9A9A;
-  --color-void:     #0A0A0A;
-  --color-rupture:  #C41E1E;
-  --color-dust:     #D4C17A;
-  --color-frost:    #E8EEF0;
-
-  /* Semantic */
-  --bg:             var(--color-ground);
-  --text-primary:   var(--color-void);
-  --text-secondary: var(--color-ash);
-  --border-subtle:  rgba(10, 10, 10, 0.08);
-
-  /* Spacing scale (4px base) */
-  --space-1:  4px;
-  --space-2:  8px;
-  --space-3:  12px;
-  --space-4:  16px;
-  --space-5:  24px;
-  --space-6:  32px;
-  --space-7:  48px;
-  --space-8:  64px;
-  --space-9:  96px;
-  --space-10: 128px;
-  --space-11: 192px;
-  --space-12: 256px;
-
-  /* Layout */
-  --section-gap:  var(--space-11);
-  --page-margin:  clamp(24px, 5vw, 120px);
-
-  /* Typography */
-  --font-serif: 'Cormorant Garamond', Georgia, serif;
-  --font-sans:  'DM Sans', 'Helvetica Neue', sans-serif;
-
-  /* Easing */
-  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-soft:     cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-linger:   cubic-bezier(0.0, 0, 0.2, 1);
-
-  /* Durations */
-  --duration-base:     320ms;
-  --duration-slow:     560ms;
-  --duration-drift:    900ms;
-  --duration-ceremony: 1400ms;
-}
-
-/* ─── Tailwind v4 Theme Extension ────────────────────────────────────────── */
+/* ─── Tailwind v4 Theme Tokens ────────────────────────────────────────────── */
 @theme {
-  /* Custom colors — accessible as bg-ground, text-void, etc. */
+  /* Colors */
   --color-ground:  #FAF8F5;
-  --color-cream:   #F5F0E8;
-  --color-sky:     #C8D8E4;
-  --color-ash:     #9A9A9A;
-  --color-void:    #0A0A0A;
-  --color-rupture: #C41E1E;
-  --color-dust:    #D4C17A;
-  --color-frost:   #E8EEF0;
+  --color-cream:   #F2EDE3;
+  --color-sky:     #B8CDD8;
+  --color-ash:     #8A8A8A;
+  --color-void:    #060606;
+  --color-rupture: #D91C1C;
+  --color-dust:    #C9B55A;
+  --color-ember:   #C4612A;
+  --color-frost:   #D8E8EE;
 
   /* Font families */
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans:  'DM Sans', 'Helvetica Neue', sans-serif;
 
   /* Custom spacing */
-  --spacing-section: 192px;
-  --spacing-page-x:  clamp(24px, 5vw, 120px);
-
-  /* Tracking utilities */
-  --letter-spacing-label: 0.18em;
-  --letter-spacing-wide:  0.08em;
+  --spacing-section: 160px;
+  --spacing-page:    clamp(24px, 5vw, 100px);
 }
 
-/* ─── Base Styles ─────────────────────────────────────────────────────────── */
+/* ─── CSS Custom Properties ───────────────────────────────────────────────── */
+:root {
+  --page-margin:   clamp(24px, 5vw, 100px);
+  --border-line:   rgba(6, 6, 6, 0.12);
+  --ease-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in:       cubic-bezier(0.7, 0, 0.84, 0);
+  --ease-soft:     cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Legacy aliases kept for existing code */
+  --color-ground:  #FAF8F5;
+  --color-cream:   #F2EDE3;
+  --color-sky:     #B8CDD8;
+  --color-ash:     #8A8A8A;
+  --color-void:    #060606;
+  --color-rupture: #D91C1C;
+  --color-dust:    #C9B55A;
+  --color-ember:   #C4612A;
+  --color-frost:   #D8E8EE;
+
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans:  'DM Sans', 'Helvetica Neue', sans-serif;
+
+  /* Legacy duration tokens */
+  --duration-base:     320ms;
+  --duration-slow:     560ms;
+  --duration-drift:    900ms;
+  --duration-ceremony: 1400ms;
+  --ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-linger:       cubic-bezier(0.0, 0, 0.2, 1);
+}
+
+/* ─── Reset ───────────────────────────────────────────────────────────────── */
 *,
 *::before,
 *::after {
@@ -87,26 +63,33 @@
 }
 
 html {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
   scroll-behavior: smooth;
 }
 
 body {
-  background-color: var(--color-ground);
-  color: var(--color-void);
-  font-family: var(--font-sans);
+  background-color: #FAF8F5;
+  color: #060606;
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   line-height: 1.6;
+  cursor: none;
 }
 
-/* ─── Typography Helpers ─────────────────────────────────────────────────── */
+/* Hide default cursor everywhere */
+*,
+*:hover {
+  cursor: none !important;
+}
+
+/* ─── Typography Helpers ──────────────────────────────────────────────────── */
 .font-serif {
-  font-family: var(--font-serif);
+  font-family: 'Cormorant Garamond', Georgia, serif;
 }
 
 .font-sans {
-  font-family: var(--font-sans);
+  font-family: 'DM Sans', 'Helvetica Neue', sans-serif;
 }
 
 .tracking-label {
@@ -125,7 +108,48 @@ body {
   max-width: 52ch;
 }
 
-/* ─── Navigation Link Underline ──────────────────────────────────────────── */
+/* ─── Section Label ───────────────────────────────────────────────────────── */
+.label {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #8A8A8A;
+}
+
+/* ─── Red Accent Bar ──────────────────────────────────────────────────────── */
+.accent-bar {
+  display: block;
+  width: 40px;
+  height: 2px;
+  background: #D91C1C;
+}
+
+/* ─── Nav Link Hover Underline ────────────────────────────────────────────── */
+.nav-link {
+  position: relative;
+  text-decoration: none;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: #D91C1C;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-link:hover::after {
+  transform: scaleX(1);
+}
+
+/* Legacy alias */
 .nav-link-underline {
   position: relative;
   text-decoration: none;
@@ -138,38 +162,55 @@ body {
   left: 0;
   width: 100%;
   height: 1px;
-  background-color: var(--color-rupture);
+  background: #D91C1C;
   transform: scaleX(0);
   transform-origin: left center;
-  transition: transform var(--duration-slow) var(--ease-out-expo);
+  transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .nav-link-underline:hover::after {
   transform: scaleX(1);
 }
 
-/* ─── Reveal Animation Classes (triggers added by Motion agent) ──────────── */
+/* ─── Scroll Reveal States ────────────────────────────────────────────────── */
 .reveal {
   opacity: 0;
-  transform: translateY(24px);
+  transform: translateY(28px);
   transition:
-    opacity 560ms cubic-bezier(0.16, 1, 0.3, 1),
-    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 700ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 700ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.reveal.visible,
 .reveal.is-visible {
   opacity: 1;
   transform: translateY(0);
 }
 
-.reveal-image {
+.reveal-img {
   opacity: 0;
-  transform: scale(0.97);
+  transform: scale(0.96);
   transition:
-    opacity 1400ms cubic-bezier(0.0, 0, 0.2, 1),
-    transform 1400ms cubic-bezier(0.16, 1, 0.3, 1);
+    opacity 1100ms cubic-bezier(0, 0, 0.2, 1),
+    transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.reveal-img.visible,
+.reveal-img.is-visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Alias for reveal-img */
+.reveal-image {
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity 1100ms cubic-bezier(0, 0, 0.2, 1),
+    transform 1100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.reveal-image.visible,
 .reveal-image.is-visible {
   opacity: 1;
   transform: scale(1);
@@ -177,18 +218,19 @@ body {
 
 .reveal-label {
   opacity: 0;
-  letter-spacing: 0.32em;
+  letter-spacing: 0.3em;
   transition:
-    opacity 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 320ms ease,
     letter-spacing 560ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.reveal-label.visible,
 .reveal-label.is-visible {
   opacity: 1;
   letter-spacing: 0.18em;
 }
 
-/* ─── Stagger Delays (for Motion agent usage) ────────────────────────────── */
+/* ─── Stagger Delay Helpers ───────────────────────────────────────────────── */
 .delay-1 { transition-delay: 80ms; }
 .delay-2 { transition-delay: 160ms; }
 .delay-3 { transition-delay: 240ms; }

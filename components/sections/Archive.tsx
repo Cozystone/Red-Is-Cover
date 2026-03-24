@@ -1,17 +1,28 @@
 'use client'
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+/* Archive Section — visual archive / object language */
+/* cream background, banner.png, parallax, object tag grid, ticker */
+
+import Image from 'next/image'
+import { useState, useRef } from 'react'
+import { motion, useScroll, useTransform } from 'framer-motion'
 import ScrollReveal from '@/components/ui/ScrollReveal'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const
-
-const OBJECT_WORDS = [
-  'flowers',
-  'fire',
-  'ribbons',
+const OBJECT_TAGS = [
+  'FLOWER',
+  'SUIT',
+  'TELEPHONE',
+  'FIRE',
+  'CHAIR',
+  'CHANDELIER',
+  'RIBBON',
+  'LETTER',
+  'BALLOON',
+  'CAR',
+  'TABLE',
+  'OLD MUSIC DEVICE',
 ] as const
 
 const TICKER_LABELS = [
@@ -25,41 +36,38 @@ const TICKER_LABELS = [
   'LETTER',
   'BALLOON',
   'CAR',
+  'TABLE',
+  'OLD MUSIC DEVICE',
 ] as const
 
-// Accent colors for object word hover
-const WORD_ACCENT_COLORS: Record<string, string> = {
-  flowers: '#C8D8E4',
-  fire: '#C41E1E',
-  ribbons: '#F5F0E8',
-}
+// ─── Object Tag ───────────────────────────────────────────────────────────────
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-interface ObjectWordProps {
-  word: string
-}
-
-function ObjectWord({ word }: ObjectWordProps) {
+function ObjectTag({ label }: { label: string }) {
   const [hovered, setHovered] = useState(false)
-  const accentColor = WORD_ACCENT_COLORS[word] ?? '#9A9A9A'
 
   return (
     <motion.span
-      className="cursor-hover inline-block"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      animate={{ color: hovered ? accentColor : '#9A9A9A' }}
-      transition={{ duration: 0.2, ease: 'easeOut' }}
+      animate={{
+        backgroundColor: hovered ? '#D91C1C' : 'transparent',
+        color: hovered ? '#FAF8F5' : '#060606',
+        borderColor: hovered ? '#D91C1C' : 'rgba(6,6,6,0.2)',
+      }}
+      transition={{ duration: 0.2 }}
       style={{
-        fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.18em',
         display: 'inline-block',
+        border: '1px solid rgba(6,6,6,0.2)',
+        padding: '6px 16px',
+        fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+        fontSize: '10px',
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase' as const,
+        cursor: 'default',
+        userSelect: 'none' as const,
       }}
     >
-      [{word}]
+      {label}
     </motion.span>
   )
 }
@@ -67,209 +75,326 @@ function ObjectWord({ word }: ObjectWordProps) {
 // ─── Archive Section ──────────────────────────────────────────────────────────
 
 export default function Archive() {
+  const bannerRef = useRef<HTMLDivElement>(null)
+
+  const { scrollYProgress } = useScroll({
+    target: bannerRef,
+    offset: ['start end', 'end start'],
+  })
+
+  // Parallax: image moves up slightly as user scrolls past
+  const imageY = useTransform(scrollYProgress, [0, 1], ['-8%', '8%'])
+
   return (
     <section
-      className="w-full overflow-hidden"
-      style={{ backgroundColor: 'var(--color-cream, #F5F0E8)' }}
+      id="archive"
+      aria-label="Visual Archive"
+      style={{ backgroundColor: '#F2EDE3', overflow: 'hidden' }}
     >
-      {/* ── Section label ─────────────────────────────────────────────────── */}
-      <div className="px-6 md:px-12 lg:px-20 pt-32">
-        <ScrollReveal variant="label" delay={0.1}>
+      {/* ══════════════════════════════════════════════════════════════════════
+          ROW 1 — Section header
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          paddingTop: 'clamp(96px, 12vw, 192px)',
+          paddingLeft: 'var(--page-margin)',
+          paddingRight: 'var(--page-margin)',
+          paddingBottom: 'clamp(48px, 6vw, 80px)',
+        }}
+      >
+        <ScrollReveal variant="label" delay={0.05}>
           <p
-            className="text-xs uppercase mb-16"
             style={{
-              color: '#9A9A9A',
-              fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
-              letterSpacing: '0.18em',
+              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize: '10px',
+              fontWeight: 500,
+              letterSpacing: '0.22em',
+              textTransform: 'uppercase',
+              color: '#D91C1C',
+              marginBottom: '32px',
             }}
           >
-            Visual Archive
+            04 — VISUAL ARCHIVE
           </p>
+        </ScrollReveal>
+
+        <ScrollReveal delay={0.1}>
+          <h2
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 'clamp(2.8rem, 7vw, 7rem)',
+              fontWeight: 300,
+              color: '#060606',
+              lineHeight: 1.0,
+              letterSpacing: '-0.02em',
+            }}
+          >
+            A vocabulary
+            <br />
+            made of things.
+          </h2>
         </ScrollReveal>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ROW 1 — Full-width text statement + object words
+          ROW 2 — Banner image with parallax
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="px-6 md:px-12 lg:px-20 pb-24 text-center">
-        <ScrollReveal delay={0.15}>
-          <h2
-            className="font-light leading-none mb-10"
+      <div
+        ref={bannerRef}
+        style={{
+          position: 'relative',
+          width: '100%',
+          height: 'clamp(300px, 35vw, 500px)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Parallax image wrapper */}
+        <motion.div
+          style={{
+            position: 'absolute',
+            inset: '-10%',
+            y: imageY,
+          }}
+        >
+          <Image
+            src="/banner.png"
+            alt="Dramatic figure on mountain — visual archive"
+            fill
             style={{
-              fontFamily: 'var(--font-serif, Cormorant Garamond, serif)',
-              fontSize: 'clamp(2.5rem, 6vw, 6vw)',
-              color: '#0A0A0A',
+              objectFit: 'cover',
+              objectPosition: 'center 30%',
+            }}
+            priority
+          />
+        </motion.div>
+
+        {/* Dark gradient overlay */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background:
+              'linear-gradient(to right, rgba(6,6,6,0.55) 0%, rgba(6,6,6,0.2) 50%, rgba(6,6,6,0.4) 100%)',
+            zIndex: 2,
+          }}
+        />
+
+        {/* Text overlay */}
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            paddingLeft: 'var(--page-margin)',
+            paddingRight: 'var(--page-margin)',
+            zIndex: 3,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontSize: 'clamp(1.5rem, 3.5vw, 3.5rem)',
               fontStyle: 'italic',
+              fontWeight: 300,
+              color: '#FAF8F5',
+              lineHeight: 1.2,
+              maxWidth: '18em',
+              letterSpacing: '0.01em',
             }}
           >
-            Things that carry warmth.
-          </h2>
+            To The Ultimate Journey
+          </p>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          ROW 3 — Object Language tag grid
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div
+        style={{
+          paddingTop: 'clamp(56px, 7vw, 96px)',
+          paddingBottom: 'clamp(48px, 6vw, 80px)',
+          paddingLeft: 'var(--page-margin)',
+          paddingRight: 'var(--page-margin)',
+        }}
+      >
+        <ScrollReveal variant="label" delay={0.05}>
+          <p
+            style={{
+              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize: '9px',
+              fontWeight: 500,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: '#8A8A8A',
+              marginBottom: '24px',
+            }}
+          >
+            OBJECT LANGUAGE — A RECURRING VOCABULARY
+          </p>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.3}>
-          <div className="flex items-center justify-center gap-8">
-            {OBJECT_WORDS.map((word) => (
-              <ObjectWord key={word} word={word} />
+        <ScrollReveal delay={0.1}>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '10px',
+            }}
+          >
+            {OBJECT_TAGS.map((tag) => (
+              <ObjectTag key={tag} label={tag} />
             ))}
           </div>
         </ScrollReveal>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ROW 2 — Asymmetric 3-column layout
-      ══════════════════════════════════════════════════════════════════════ */}
-      <div className="px-6 md:px-12 lg:px-20 pb-32">
-        <div className="grid grid-cols-12 gap-6 items-start">
-
-          {/* Left: tall placeholder image, 3 cols, aspect 3:4 */}
-          <div className="col-span-12 md:col-span-3">
-            <ScrollReveal variant="image" delay={0.1}>
-              <div
-                className="w-full"
-                style={{
-                  aspectRatio: '3/4',
-                  backgroundColor: 'rgba(200, 216, 228, 0.4)',
-                }}
-              />
-            </ScrollReveal>
-          </div>
-
-          {/* Center: large object word + caption, 6 cols */}
-          <div className="col-span-12 md:col-span-6 flex flex-col justify-center py-8 md:py-0 md:pl-8">
-            <ScrollReveal delay={0.2}>
-              <p
-                className="font-light leading-none mb-6"
-                style={{
-                  fontFamily: 'var(--font-serif, Cormorant Garamond, serif)',
-                  fontSize: 'clamp(4rem, 12vw, 12vw)',
-                  color: '#0A0A0A',
-                  letterSpacing: '-0.02em',
-                }}
-              >
-                CHAIR
-              </p>
-            </ScrollReveal>
-
-            <ScrollReveal delay={0.32}>
-              <p
-                className="text-base font-light italic"
-                style={{
-                  fontFamily: 'var(--font-serif, Cormorant Garamond, serif)',
-                  color: '#9A9A9A',
-                  maxWidth: '28ch',
-                }}
-              >
-                It waited. No one came.
-              </p>
-            </ScrollReveal>
-          </div>
-
-          {/* Right: square placeholder image, 3 cols */}
-          <div className="col-span-12 md:col-span-3">
-            <ScrollReveal variant="image" delay={0.18}>
-              <div
-                className="w-full"
-                style={{
-                  aspectRatio: '1/1',
-                  backgroundColor: 'var(--color-cream, #F5F0E8)',
-                  border: '1px solid rgba(154,154,154,0.2)',
-                }}
-              />
-            </ScrollReveal>
-          </div>
-
-        </div>
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          ROW 3 — Object ticker
+          ROW 4 — Two-column editorial
       ══════════════════════════════════════════════════════════════════════ */}
       <div
-        className="py-10 border-y"
-        style={{ borderColor: 'rgba(154,154,154,0.2)' }}
+        style={{
+          paddingLeft: 'var(--page-margin)',
+          paddingRight: 'var(--page-margin)',
+          paddingBottom: 'clamp(64px, 8vw, 96px)',
+        }}
       >
-        <ScrollReveal delay={0.05}>
-          {/* Outer clip container — hides overflow for a clean edge */}
-          <div className="overflow-hidden">
-            <motion.div
-              className="flex items-center whitespace-nowrap"
-              animate={{ x: [0, -80] }}
-              transition={{
-                duration: 60,
-                ease: 'linear',
-                repeat: Infinity,
-                repeatType: 'loop',
-              }}
-            >
-              {/* Duplicate labels twice so the loop appears seamless */}
-              {[...TICKER_LABELS, ...TICKER_LABELS].map((label, i) => (
-                <span
-                  key={`${label}-${i}`}
-                  className="inline-flex items-center"
-                >
-                  <span
-                    style={{
-                      fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
-                      fontSize: '0.75rem',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.18em',
-                      color: '#9A9A9A',
-                      padding: '0 2.5rem',
-                    }}
-                  >
-                    {label}
-                  </span>
-                  {/* Separator dash */}
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      width: '1px',
-                      height: '12px',
-                      backgroundColor: 'rgba(154,154,154,0.4)',
-                      flexShrink: 0,
-                    }}
-                  />
-                </span>
-              ))}
-            </motion.div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(12, 1fr)',
+            gap: 'clamp(24px, 4vw, 48px)',
+            alignItems: 'start',
+          }}
+        >
+          {/* Left — 5 cols */}
+          <div
+            style={{
+              gridColumn: 'span 12',
+            }}
+            className="archive-col-left"
+          >
+            <ScrollReveal delay={0.08}>
+              <p
+                style={{
+                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontSize: 'clamp(2.5rem, 5vw, 5rem)',
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: '#060606',
+                  lineHeight: 1.1,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                Things that carry
+                <br />
+                warmth.
+              </p>
+            </ScrollReveal>
           </div>
-        </ScrollReveal>
+
+          {/* Right — offset column */}
+          <div
+            style={{
+              gridColumn: 'span 12',
+            }}
+            className="archive-col-right"
+          >
+            <ScrollReveal delay={0.18}>
+              <p
+                style={{
+                  fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+                  fontSize: '15px',
+                  fontWeight: 400,
+                  lineHeight: 1.85,
+                  color: '#8A8A8A',
+                  maxWidth: '52ch',
+                }}
+              >
+                Every object in my work is chosen for what it implies, not what
+                it shows. The telephone suggests waiting. The suit suggests
+                absence. The flower suggests what is already ending.
+              </p>
+            </ScrollReveal>
+          </div>
+        </div>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
-          Concluding text block
+          Concluding — Red bar + Ticker
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="px-6 md:px-12 lg:px-20 py-32">
-        <div className="max-w-3xl">
-          <ScrollReveal delay={0.1}>
-            <p
-              className="font-light italic leading-snug mb-8"
-              style={{
-                fontFamily: 'var(--font-serif, Cormorant Garamond, serif)',
-                fontSize: 'clamp(1.75rem, 3.5vw, 3.5vw)',
-                color: '#0A0A0A',
-              }}
-            >
-              A vocabulary made of things.
-            </p>
-          </ScrollReveal>
 
-          <ScrollReveal delay={0.22}>
-            <p
-              className="text-sm leading-loose"
-              style={{
-                fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
-                color: '#9A9A9A',
-                maxWidth: '52ch',
-              }}
-            >
-              Every object in my work is chosen for what it implies, not what
-              it shows. The telephone suggests waiting. The suit suggests
-              absence. The flower suggests what is already ending.
-            </p>
-          </ScrollReveal>
-        </div>
+      {/* Thick red bar */}
+      <div
+        aria-hidden="true"
+        style={{
+          height: '3px',
+          width: '100%',
+          backgroundColor: '#D91C1C',
+        }}
+      />
+
+      {/* Slow-drifting ticker */}
+      <div
+        style={{
+          paddingTop: '28px',
+          paddingBottom: '28px',
+          overflow: 'hidden',
+          borderTop: '1px solid rgba(6,6,6,0.06)',
+        }}
+      >
+        <motion.div
+          className="flex items-center whitespace-nowrap"
+          animate={{ x: [0, -640] }}
+          transition={{
+            duration: 60,
+            ease: 'linear',
+            repeat: Infinity,
+            repeatType: 'loop',
+          }}
+        >
+          {[...TICKER_LABELS, ...TICKER_LABELS, ...TICKER_LABELS].map((label, i) => (
+            <span key={`${label}-${i}`} style={{ display: 'inline-flex', alignItems: 'center' }}>
+              <span
+                style={{
+                  fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+                  fontSize: '10px',
+                  textTransform: 'uppercase' as const,
+                  letterSpacing: '0.18em',
+                  color: '#8A8A8A',
+                  padding: '0 2.5rem',
+                }}
+              >
+                {label}
+              </span>
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: '1px',
+                  height: '12px',
+                  backgroundColor: 'rgba(6,6,6,0.15)',
+                  flexShrink: 0,
+                }}
+              />
+            </span>
+          ))}
+        </motion.div>
       </div>
+
+      {/* Responsive styles */}
+      <style>{`
+        @media (min-width: 768px) {
+          .archive-col-left {
+            grid-column: span 5 !important;
+          }
+          .archive-col-right {
+            grid-column: 8 / span 5 !important;
+          }
+        }
+      `}</style>
     </section>
   )
 }
