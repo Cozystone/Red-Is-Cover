@@ -12,7 +12,7 @@ interface ImageItem {
 }
 
 interface BackgroundFieldProps {
-  /** Optional array of image URLs to scatter across the field */
+  /** Optional array of image URLs to override Pinterest feed */
   images?: ImageItem[];
   /** Base opacity multiplier. Default 0.12 */
   opacity?: number;
@@ -49,23 +49,40 @@ const FALLBACK_SRC = "/banner.png";
 // ── Component ──────────────────────────────────────────────────────────────
 
 export default function BackgroundField({
-  images,
+  images: imagesProp,
   opacity = 0.12,
   enabled = true,
 }: BackgroundFieldProps) {
   const [mounted, setMounted] = useState(false);
+  const [pinterestImages, setPinterestImages] = useState<ImageItem[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  // Fetch Pinterest images (server returns [] if not configured — silent fallback)
+  useEffect(() => {
+    if (!enabled) return;
+    fetch('/api/pinterest')
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.images?.length > 0) {
+          setPinterestImages(data.images);
+        }
+      })
+      .catch(() => {/* silent — use fallback */});
+  }, [enabled]);
+
   // Never render during SSR or when disabled
   if (!mounted || !enabled) return null;
 
+  // Priority: prop override → Pinterest feed → fallback banner
+  const activeImages = imagesProp ?? (pinterestImages.length > 0 ? pinterestImages : null);
+
   // Build a flat list of resolved sources — one per instance slot
   const sources: ImageItem[] = INSTANCES.map((_, i) => {
-    if (images && images.length > 0) {
-      return images[i % images.length];
+    if (activeImages && activeImages.length > 0) {
+      return activeImages[i % activeImages.length];
     }
     return { url: FALLBACK_SRC, alt: "" };
   });
