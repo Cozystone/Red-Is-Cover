@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { motion, useMotionValue, useSpring } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 export default function CustomCursor() {
   const [isPointerFine, setIsPointerFine] = useState(false);
@@ -14,6 +14,11 @@ export default function CustomCursor() {
   const mouseY = useMotionValue(-300);
   const springX = useSpring(mouseX, { stiffness: 550, damping: 32 });
   const springY = useSpring(mouseY, { stiffness: 550, damping: 32 });
+
+  // Hotspot: tip of index finger at SVG coords (19, 2) in a 44×54 image
+  // Bake offset into MotionValues to avoid translateX/translateY conflict
+  const cursorX = useTransform(springX, v => v - 19);
+  const cursorY = useTransform(springY, v => v - 2);
 
   useEffect(() => {
     setMounted(true);
@@ -30,7 +35,7 @@ export default function CustomCursor() {
     const onMove = (e: MouseEvent) => {
       mouseX.set(e.clientX);
       mouseY.set(e.clientY);
-      if (!isVisible) setIsVisible(true);
+      setIsVisible(true);
     };
 
     const onOver = (e: MouseEvent) => {
@@ -56,7 +61,7 @@ export default function CustomCursor() {
       document.removeEventListener("mouseover",  onOver);
       document.documentElement.removeEventListener("mouseleave", onLeave);
     };
-  }, [isPointerFine, isVisible, mouseX, mouseY]);
+  }, [isPointerFine, mouseX, mouseY]);
 
   if (!mounted || !isPointerFine) return null;
 
@@ -69,14 +74,11 @@ export default function CustomCursor() {
         left:          0,
         zIndex:        9999,
         pointerEvents: "none",
-        x:             springX,
-        y:             springY,
-        // Hotspot: tip of index finger at SVG coords (19, 2) in a 44×54 image
-        translateX:    "-19px",
-        translateY:    "-2px",
-        opacity:       isVisible ? 1 : 0,
-        transition:    "opacity 150ms ease",
+        x:             cursorX,
+        y:             cursorY,
       }}
+      animate={{ opacity: isVisible ? 1 : 0 }}
+      transition={{ duration: 0.15 }}
     >
       <motion.div
         animate={{ scale: isHovered ? 1.25 : 1.0, rotate: isHovered ? -14 : 0 }}
@@ -90,7 +92,6 @@ export default function CustomCursor() {
 
 // ── Cartoon white glove — inline SVG, no external file ───────────────────────
 // Render order: fingers first → palm on top (covers finger bases) → cuff on top
-// This avoids any gap artifacts at finger-palm junctions.
 
 function GloveIcon() {
   return (

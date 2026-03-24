@@ -29,19 +29,6 @@ export default function KeychainNav() {
           <KeychainCanvas />
         </div>
 
-        {/* Bottom fade into page */}
-        <div
-          aria-hidden="true"
-          style={{
-            position:      'absolute',
-            bottom:        0,
-            left:          0,
-            right:         0,
-            height:        '60px',
-            background:    'linear-gradient(to bottom, transparent, #060606)',
-            pointerEvents: 'none',
-          }}
-        />
 
         {/* ── RED IS COVER logo — top-left, Helvetica ─────────────────────── */}
         <a
