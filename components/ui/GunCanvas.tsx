@@ -70,51 +70,44 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
     const navWy = (1 - navButtonPos.y * 2)        * (viewport.height / 2)
 
     if (gunState === 'dropping') {
-      // ── Scale: small — only the handle region is visible ─────────────
+      // ── Scale: small — handle visible at nav bar ──────────────────────
       g.scale.setScalar(base * 1.6)
 
-      // ── Position: handle at nav button, barrel off-screen above ──────
-      // rotation.x = PI → grip is at the bottom of the gun in world space
-      // gun center sits ~0.6 units above grip → offset navWy upward
-      const targetX = navWx
-      const targetY = navWy + 0.6
-      g.position.x += (targetX - g.position.x) * 0.10
-      g.position.y += (targetY - g.position.y) * 0.10
+      // ── Position: centered on nav button ─────────────────────────────
+      g.position.x += (navWx - g.position.x) * 0.10
+      g.position.y += (navWy - g.position.y) * 0.10
       g.position.z  = 0
 
-      // Gentle handle bob
+      // Gentle bob
       phase.current += dt * 0.9
       g.position.y  += Math.sin(phase.current) * 0.03
 
-      // Barrel points straight up, grip faces down (toward viewer)
-      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, Math.PI, dt * 6)
-      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, 0,        dt * 6)
-      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0,        dt * 6)
+      // ── Side view: barrel points right, grip at bottom ────────────────
+      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, 0,             dt * 6)
+      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, Math.PI / 2,   dt * 6)
+      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0,             dt * 6)
 
     } else if (gunState === 'aiming') {
-      // ── Scale: large — first-person FPS view ─────────────────────────
-      g.scale.setScalar(base * 4.5)
+      // ── Scale: medium — gun follows cursor ────────────────────────────
+      g.scale.setScalar(base * 2.8)
 
-      // ── Position: lower-right quadrant, fixed anchor point ───────────
-      const fpX = viewport.width  *  0.18
-      const fpY = viewport.height * -0.30
-      g.position.x += (fpX - g.position.x) * 0.09
-      g.position.y += (fpY - g.position.y) * 0.09
+      // ── Position: cursor tracking (gun is "held" by cursor) ───────────
+      const wx = mouse.current.x * (viewport.width  / 2)
+      const wy = mouse.current.y * (viewport.height / 2)
+      g.position.x += (wx - g.position.x) * 0.13
+      g.position.y += (wy - g.position.y) * 0.13
       g.position.z  = 0
 
-      // Subtle idle hand-wobble
+      // Subtle idle wobble on top of cursor tracking
       phase.current += dt * 1.1
-      g.position.x  += Math.sin(phase.current * 0.7) * 0.04
-      g.position.y  += Math.sin(phase.current)       * 0.025
+      g.position.x  += Math.sin(phase.current * 0.7) * 0.02
+      g.position.y  += Math.sin(phase.current)       * 0.015
 
-      // ── Rotation: diagonal view so barrel length is visible, cursor-driven aim
-      const aimX = mouse.current.x * 0.20   // horizontal aim lean
-      const aimY = mouse.current.y * 0.18   // vertical aim tilt
-
-      g.rotation.x += ((-0.15 + aimY) - g.rotation.x) * 0.10
-      // PI * 0.45 ≈ 81° → diagonal between side-view and front-view
-      g.rotation.y += ((Math.PI * 0.45 + aimX * 0.5) - g.rotation.y) * 0.10
-      g.rotation.z += ((-aimX * 0.10)                - g.rotation.z) * 0.08
+      // ── Rear view: hammer visible, slight lean from cursor ────────────
+      const lean = mouse.current.x * 0.08
+      g.rotation.x += (0      - g.rotation.x) * 0.10
+      g.rotation.y += (Math.PI - g.rotation.y) * 0.10
+      g.rotation.z += (lean   - g.rotation.z) * 0.08
     }
   })
 
