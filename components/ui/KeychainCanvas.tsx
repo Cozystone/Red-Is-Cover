@@ -1,39 +1,37 @@
 'use client'
 
-// KeychainCanvas — 3D keychain navigation rendered by @react-three/fiber
-// Dynamically imported (no SSR) by KeychainNav.tsx
+// KeychainCanvas — horizontal rail with glass keychains hanging down
+// Camera: (0, 0.5, 7), FOV 52
+// Visible Y at Z=0: 0.5 ± tan(26°)*7 ≈ [-2.9, +3.9]
+// Rail at Y=3.3, keychains hang to Y≈1.4 center → all visible
 
-import { useRef, useMemo, useCallback } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
+import { useRef, useMemo, useCallback, useEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useGun } from '@/lib/gunContext'
 
-// ── Config ────────────────────────────────────────────────────────────────────
-// Camera: position (0, 0.8, 9), FOV 55
-// Visible Y at Z=0: 0.8 ± tan(27.5°)*9 ≈ 0.8 ± 4.69 → [-3.89, +5.49]
-// ANCHOR_Y=4.5 (top of pendulum, barely in view → looks like hanging from above)
-// Keychain center Y ≈ 2.9 → nicely centered
-// Large ring at Y=23, R=18.5 → only bottom arc (Y≈4.5) peeks into view
-
-const ANCHOR_Y  = 4.5
-const RING_Y    = 23
-const RING_R    = 18.5
-const ARM       = 0.70   // pendulum arm length
-const KW        = 1.30   // keychain width
-const KH        = 1.75   // keychain height
-const KD        = 0.10   // keychain depth
-const SPREAD    = 7.0    // half-width spread (keychains from -7 to +7)
+// ── Nav items ─────────────────────────────────────────────────────────────────
 
 const NAV_ITEMS = [
   { label: 'WORLD',   color: '#D91C1C', textColor: '#ffffff', href: '#world'   },
   { label: 'WORK',    color: '#C9B55A', textColor: '#1a1a1a', href: '#work'    },
-  { label: 'ARCHIVE', color: '#6e6e6e', textColor: '#ffffff', href: '#archive' },
-  { label: 'ABOUT',   color: '#F5F0E8', textColor: '#060606', href: '#about'   },
-  { label: 'CONTACT', color: '#B8CDD8', textColor: '#060606', href: '#contact' },
+  { label: 'ARCHIVE', color: '#6a6a72', textColor: '#ffffff', href: '#archive' },
+  { label: 'ABOUT',   color: '#F0EBE3', textColor: '#111111', href: '#about'   },
+  { label: 'CONTACT', color: '#A8C8D8', textColor: '#111111', href: '#contact' },
   { label: 'GUN',     color: '#D91C1C', textColor: '#ffffff', href: null       },
 ] as const
 
 const N = NAV_ITEMS.length
+
+// Layout: keychains span X from -HALF_SPAN to +HALF_SPAN
+// Spaced 3.2 units apart so on narrower screens some hang off-edge (scrollable)
+const SPACING   = 3.2
+const HALF_SPAN = (SPACING * (N - 1)) / 2   // = 8
+const RAIL_Y    = 3.3   // Y position of horizontal rail
+const ARM       = 0.55  // wire length above keychain body
+const KW        = 1.25  // keychain width
+const KH        = 1.65  // keychain height
+const KD        = 0.09  // keychain depth
 
 // ── Text texture ──────────────────────────────────────────────────────────────
 
@@ -42,12 +40,25 @@ function makeText(label: string, textColor: string): THREE.CanvasTexture {
   c.width = 256; c.height = 128
   const ctx = c.getContext('2d')!
   ctx.clearRect(0, 0, 256, 128)
-  ctx.font      = 'bold 52px "Helvetica Neue", Helvetica, Arial, sans-serif'
+  ctx.font         = 'bold 48px "Helvetica Neue", Helvetica, Arial, sans-serif'
   ctx.textAlign    = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillStyle = textColor
+  ctx.fillStyle    = textColor
   ctx.fillText(label, 128, 64)
   return new THREE.CanvasTexture(c)
+}
+
+// ── Horizontal rail ───────────────────────────────────────────────────────────
+
+function Rail() {
+  // Rail extends well past keychain span for visual continuity
+  const len = HALF_SPAN * 2 + 8
+  return (
+    <mesh position={[0, RAIL_Y, 0]} rotation={[0, 0, Math.PI / 2]}>
+      <cylinderGeometry args={[0.045, 0.045, len, 12]} />
+      <meshStandardMaterial color="#c4c4cc" metalness={0.95} roughness={0.12} />
+    </mesh>
+  )
 }
 
 // ── Single keychain pendulum ──────────────────────────────────────────────────
@@ -58,24 +69,29 @@ interface PendulumProps {
 }
 
 function Pendulum({ index, onNav }: PendulumProps) {
-  const item    = NAV_ITEMS[index]
-  const ref     = useRef<THREE.Group>(null)
-  const angle   = useRef((Math.random() - 0.5) * 0.06)
-  const angVel  = useRef(0)
-  const prevMX  = useRef<number | null>(null)
+  const item   = NAV_ITEMS[index]
+  const ref    = useRef<THREE.Group>(null)
+  const angle  = useRef((Math.random() - 0.5) * 0.05)
+  const angVel = useRef(0)
+  const prevMX = useRef<number | null>(null)
 
-  const x   = -SPREAD + (SPREAD * 2 * index) / (N - 1)
-  const COM = ARM + KH / 2           // pivot-to-COM length
-  const w2  = 9.81 / COM             // pendulum natural freq²
+  // X position along the rail
+  const x = -HALF_SPAN + SPACING * index
 
-  const texture = useMemo(() => makeText(item.label, item.textColor), [item.label, item.textColor])
+  const COM = ARM + KH / 2
+  const w2  = 9.81 / COM
+
+  const texture = useMemo(
+    () => makeText(item.label, item.textColor),
+    [item.label, item.textColor]
+  )
 
   useFrame((_, dt) => {
     const safe = Math.min(dt, 0.033)
     angVel.current += -w2 * angle.current * safe
-    angVel.current *= Math.pow(0.93, safe * 60)
+    angVel.current *= Math.pow(0.94, safe * 60)
     angle.current  += angVel.current * safe
-    angle.current   = Math.max(-0.55, Math.min(0.55, angle.current))
+    angle.current   = Math.max(-0.5, Math.min(0.5, angle.current))
     if (ref.current) ref.current.rotation.z = angle.current
   })
 
@@ -83,7 +99,7 @@ function Pendulum({ index, onNav }: PendulumProps) {
     const mx = e.nativeEvent?.clientX ?? null
     if (mx !== null && prevMX.current !== null) {
       const vx = (mx - prevMX.current) / window.innerWidth * 2
-      if (Math.abs(vx) > 0.001) angVel.current += vx * 7
+      if (Math.abs(vx) > 0.001) angVel.current += vx * 8
     }
     prevMX.current = mx
   }, [])
@@ -92,26 +108,26 @@ function Pendulum({ index, onNav }: PendulumProps) {
 
   const onClick = useCallback((e: any) => {
     e.stopPropagation()
-    onNav(index, e.nativeEvent?.clientX ?? window.innerWidth * 0.5, e.nativeEvent?.clientY ?? 24)
+    onNav(index, e.nativeEvent?.clientX ?? window.innerWidth / 2, e.nativeEvent?.clientY ?? 24)
   }, [index, onNav])
 
   return (
-    <group ref={ref} position={[x, ANCHOR_Y, 0]}>
-      {/* Small connector ring */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.12, 0.022, 8, 24]} />
-        <meshStandardMaterial color="#c8c8d0" metalness={1} roughness={0.15} />
+    <group ref={ref} position={[x, RAIL_Y, 0]}>
+      {/* Small loop ring hooking onto the rail */}
+      <mesh rotation={[0, 0, Math.PI / 2]}>
+        <torusGeometry args={[0.11, 0.02, 8, 24]} />
+        <meshStandardMaterial color="#c4c4cc" metalness={1} roughness={0.15} />
       </mesh>
 
-      {/* Thin wire / arm */}
-      <mesh position={[0, -(ARM * 0.5), 0]}>
-        <cylinderGeometry args={[0.010, 0.010, ARM, 6]} />
-        <meshStandardMaterial color="#a8a8b4" metalness={0.9} roughness={0.3} />
+      {/* Thin wire */}
+      <mesh position={[0, -(ARM * 0.5 + 0.11), 0]}>
+        <cylinderGeometry args={[0.009, 0.009, ARM, 6]} />
+        <meshStandardMaterial color="#a8a8b8" metalness={0.9} roughness={0.3} />
       </mesh>
 
       {/* Glass body */}
       <mesh
-        position  ={[0, -(ARM + KH / 2), 0]}
+        position      ={[0, -(ARM + KH / 2 + 0.11), 0]}
         onPointerMove ={onMove}
         onPointerLeave={onLeave}
         onClick       ={onClick}
@@ -121,22 +137,22 @@ function Pendulum({ index, onNav }: PendulumProps) {
           color       ={item.color}
           metalness   ={0.02}
           roughness   ={0.06}
-          transmission={0.78}
-          thickness   ={0.5}
+          transmission={0.75}
+          thickness   ={0.45}
           ior         ={1.5}
           transparent
           side        ={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Text — front */}
-      <mesh position={[0, -(ARM + KH / 2), KD / 2 + 0.005]}>
+      {/* Text front */}
+      <mesh position={[0, -(ARM + KH / 2 + 0.11), KD / 2 + 0.005]}>
         <planeGeometry args={[KW * 1.05, KH * 0.52]} />
         <meshBasicMaterial map={texture} transparent depthWrite={false} />
       </mesh>
 
-      {/* Text — back */}
-      <mesh position={[0, -(ARM + KH / 2), -(KD / 2 + 0.005)]} rotation={[0, Math.PI, 0]}>
+      {/* Text back */}
+      <mesh position={[0, -(ARM + KH / 2 + 0.11), -(KD / 2 + 0.005)]} rotation={[0, Math.PI, 0]}>
         <planeGeometry args={[KW * 1.05, KH * 0.52]} />
         <meshBasicMaterial map={texture} transparent depthWrite={false} />
       </mesh>
@@ -144,21 +160,32 @@ function Pendulum({ index, onNav }: PendulumProps) {
   )
 }
 
-// ── Decorative main ring (partially visible at top) ───────────────────────────
-
-function DecoRing() {
-  return (
-    <mesh position={[0, RING_Y, 0]} rotation={[0.15, 0, 0]}>
-      <torusGeometry args={[RING_R, 0.08, 16, 160]} />
-      <meshStandardMaterial color="#c8c8d2" metalness={1} roughness={0.12} />
-    </mesh>
-  )
-}
-
-// ── Scene (inside Canvas) ─────────────────────────────────────────────────────
+// ── Scene ─────────────────────────────────────────────────────────────────────
 
 function Scene() {
   const { activate } = useGun()
+  const { gl }       = useThree()
+  const groupRef     = useRef<THREE.Group>(null)
+  const scrollTarget = useRef(0)
+  const scrollCur    = useRef(0)
+  const MAX_SCROLL   = 4.5   // units each side
+
+  // Mouse-wheel scrolls the keychain group left/right
+  useEffect(() => {
+    const canvas = gl.domElement
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      scrollTarget.current -= (e.deltaX + e.deltaY) * 0.008
+      scrollTarget.current  = Math.max(-MAX_SCROLL, Math.min(MAX_SCROLL, scrollTarget.current))
+    }
+    canvas.addEventListener('wheel', onWheel, { passive: false })
+    return () => canvas.removeEventListener('wheel', onWheel)
+  }, [gl])
+
+  useFrame((_, dt) => {
+    scrollCur.current += (scrollTarget.current - scrollCur.current) * Math.min(dt * 8, 1)
+    if (groupRef.current) groupRef.current.position.x = scrollCur.current
+  })
 
   const handleNav = useCallback((idx: number, clientX: number, clientY: number) => {
     const item = NAV_ITEMS[idx]
@@ -171,32 +198,33 @@ function Scene() {
 
   return (
     <>
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[4, 8, 10]} intensity={3.5} />
-      <directionalLight position={[-6, -3, 5]}  intensity={1.0} color="#aaddff" />
+      <ambientLight intensity={0.9} />
+      <directionalLight position={[4, 8, 10]} intensity={3.0} />
+      <directionalLight position={[-6, -2, 6]}  intensity={0.8} color="#aaddff" />
 
-      <DecoRing />
-
-      {NAV_ITEMS.map((_, i) => (
-        <Pendulum key={i} index={i} onNav={handleNav} />
-      ))}
+      <group ref={groupRef}>
+        <Rail />
+        {NAV_ITEMS.map((_, i) => (
+          <Pendulum key={i} index={i} onNav={handleNav} />
+        ))}
+      </group>
     </>
   )
 }
 
-// ── Canvas wrapper (exported) ─────────────────────────────────────────────────
+// ── Canvas export ─────────────────────────────────────────────────────────────
 
 export default function KeychainCanvas() {
   return (
     <Canvas
       gl={{
-        alpha:           true,
-        antialias:       true,
-        powerPreference: 'high-performance',
-        toneMapping:     THREE.ACESFilmicToneMapping,
+        alpha:               true,
+        antialias:           true,
+        powerPreference:     'high-performance',
+        toneMapping:         THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.3,
       }}
-      camera={{ position: [0, 0.8, 9], fov: 55 }}
+      camera={{ position: [0, 0.5, 7], fov: 52 }}
       style={{ background: 'transparent' }}
     >
       <Scene />

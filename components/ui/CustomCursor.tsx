@@ -10,10 +10,10 @@ export default function CustomCursor() {
   const [isHovered,     setIsHovered]     = useState(false);
   const isHoveredRef = useRef(false);
 
-  const mouseX = useMotionValue(-200);
-  const mouseY = useMotionValue(-200);
-  const springX = useSpring(mouseX, { stiffness: 600, damping: 35 });
-  const springY = useSpring(mouseY, { stiffness: 600, damping: 35 });
+  const mouseX = useMotionValue(-300);
+  const mouseY = useMotionValue(-300);
+  const springX = useSpring(mouseX, { stiffness: 550, damping: 32 });
+  const springY = useSpring(mouseY, { stiffness: 550, damping: 32 });
 
   useEffect(() => {
     setMounted(true);
@@ -36,8 +36,14 @@ export default function CustomCursor() {
     const onOver = (e: MouseEvent) => {
       const t = e.target as Element | null;
       if (!t) return;
-      const h = t.closest("a") !== null || t.closest("button") !== null || t.closest("[data-cursor]") !== null;
-      if (h !== isHoveredRef.current) { isHoveredRef.current = h; setIsHovered(h); }
+      const h =
+        t.closest("a")             !== null ||
+        t.closest("button")        !== null ||
+        t.closest("[data-cursor]") !== null;
+      if (h !== isHoveredRef.current) {
+        isHoveredRef.current = h;
+        setIsHovered(h);
+      }
     };
 
     const onLeave = () => setIsVisible(false);
@@ -58,78 +64,64 @@ export default function CustomCursor() {
     <motion.div
       aria-hidden="true"
       style={{
-        position:       "fixed",
-        top:            0,
-        left:           0,
-        zIndex:         9999,
-        pointerEvents:  "none",
-        x:              springX,
-        y:              springY,
-        // Hotspot at tip of index finger (top-left of the glove shape)
-        translateX:     "-6px",
-        translateY:     "-4px",
-        opacity:        isVisible ? 1 : 0,
-        transition:     "opacity 150ms ease",
+        position:      "fixed",
+        top:           0,
+        left:          0,
+        zIndex:        9999,
+        pointerEvents: "none",
+        x:             springX,
+        y:             springY,
+        // Hotspot: tip of index finger at SVG coords (19, 2) in a 44×54 image
+        translateX:    "-19px",
+        translateY:    "-2px",
+        opacity:       isVisible ? 1 : 0,
+        transition:    "opacity 150ms ease",
       }}
     >
       <motion.div
-        animate={{
-          scale:  isHovered ? 1.3 : 1.0,
-          rotate: isHovered ? -15 : 0,
-        }}
+        animate={{ scale: isHovered ? 1.25 : 1.0, rotate: isHovered ? -14 : 0 }}
         transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
-        style={{ display: "block", filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.5))" }}
       >
-        {/* Mickey-style white cartoon glove — inline SVG, no external file */}
-        <svg
-          viewBox="0 0 44 56"
-          width="44"
-          height="56"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Index finger — extended upward */}
-          <path
-            d="M16 22 L16 5 Q16 1 19.5 1 Q23 1 23 5 L23 22"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Middle finger — raised slightly */}
-          <path
-            d="M23 22 L23 8 Q23 5 26 5 Q29 5 29 8 L29 22"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Ring finger */}
-          <path
-            d="M29 22 L29 11 Q29 8 32 8 Q35 8 35 11 L35 22"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Pinky */}
-          <path
-            d="M35 22 L35 14 Q35 12 37.5 12 Q40 12 40 14 L40 22"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Thumb — left side */}
-          <path
-            d="M10 28 Q5 26 5 22 Q5 18 10 18 L16 18"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Palm */}
-          <path
-            d="M10 18 L10 38 Q10 44 19 44 L32 44 Q41 44 41 38 L41 22 L35 22 L29 22 L23 22 L16 22 L10 22 Z"
-            fill="white" stroke="#1a1a1a" strokeWidth="1.8" strokeLinejoin="round"
-          />
-          {/* Wrist cuff */}
-          <ellipse cx="24" cy="46" rx="11" ry="5" fill="#ece8e0" stroke="#1a1a1a" strokeWidth="1.5" />
-          {/* Cuff shadow line */}
-          <line x1="13" y1="43" x2="35" y2="43" stroke="rgba(0,0,0,0.12)" strokeWidth="1" />
-          {/* Knuckle dots */}
-          <circle cx="20" cy="31" r="1.8" fill="#ddd8d0" />
-          <circle cx="27" cy="31" r="1.8" fill="#ddd8d0" />
-          <circle cx="34" cy="31" r="1.8" fill="#ddd8d0" />
-          {/* Button / stitch on cuff */}
-          <circle cx="24" cy="47" r="2.5" fill="none" stroke="#b8b4aa" strokeWidth="1" />
-        </svg>
+        <GloveIcon />
       </motion.div>
     </motion.div>
+  );
+}
+
+// ── Cartoon white glove — inline SVG, no external file ───────────────────────
+// Render order: fingers first → palm on top (covers finger bases) → cuff on top
+// This avoids any gap artifacts at finger-palm junctions.
+
+function GloveIcon() {
+  return (
+    <svg
+      viewBox="0 0 44 54"
+      width="44"
+      height="54"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ display: "block", filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.65))" }}
+    >
+      {/* Fingers (behind palm) */}
+      <rect x="14" y="2"  width="10" height="27" rx="5"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
+      <rect x="24" y="7"  width="9"  height="22" rx="4.5" fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
+      <rect x="33" y="11" width="8"  height="18" rx="4"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
+      <rect x="0"  y="17" width="14" height="16" rx="6"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
+
+      {/* Palm — on top, white fill covers finger bases */}
+      <rect x="2"  y="26" width="39" height="18" rx="7"   fill="white" stroke="#1a1a1a" strokeWidth="1.7"/>
+
+      {/* Cuff */}
+      <ellipse cx="21.5" cy="45" rx="13" ry="5.5"          fill="#ece6db" stroke="#1a1a1a" strokeWidth="1.5"/>
+      <rect x="9" y="41" width="25" height="5"              fill="white"   stroke="none"/>
+
+      {/* Knuckle dots */}
+      <circle cx="15.5" cy="33" r="1.8" fill="#dcd6cc"/>
+      <circle cx="23"   cy="33" r="1.8" fill="#dcd6cc"/>
+      <circle cx="30"   cy="33" r="1.8" fill="#dcd6cc"/>
+
+      {/* Cuff button */}
+      <circle cx="21.5" cy="46" r="2.8" fill="none" stroke="#b0a898" strokeWidth="1"/>
+      <circle cx="21.5" cy="46" r="0.9" fill="#b0a898"/>
+    </svg>
   );
 }
