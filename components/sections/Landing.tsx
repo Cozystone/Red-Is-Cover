@@ -1,6 +1,8 @@
 /* Landing Section — cinematic dark gallery entrance */
 /* Replaces Hero.tsx */
 
+import GrassField from '@/components/ui/GrassField'
+
 export default function Landing() {
   return (
     <section
@@ -11,7 +13,7 @@ export default function Landing() {
         width: '100%',
         height: '100svh',
         minHeight: '600px',
-        backgroundColor: '#060606',
+        background: 'linear-gradient(180deg, #B00015 0%, #7A0010 70%, #3A0008 100%)',
         overflow: 'hidden',
       }}
     >
@@ -24,7 +26,7 @@ export default function Landing() {
           left: 0,
           width: '6px',
           height: '100%',
-          backgroundColor: '#D91C1C',
+          backgroundColor: 'rgba(0,0,0,0.5)',
           zIndex: 10,
         }}
       />
@@ -140,8 +142,8 @@ export default function Landing() {
           fontSize: 'clamp(100px, 16vw, 220px)',
           fontWeight: 300,
           lineHeight: 0.8,
-          color: '#D91C1C',
-          opacity: 0.6,
+          color: 'white',
+          opacity: 0.12,
           userSelect: 'none',
           pointerEvents: 'none',
         }}
@@ -153,7 +155,7 @@ export default function Landing() {
       <div
         style={{
           position: 'absolute',
-          bottom: '10%',
+          bottom: '22%',
           left: 'calc(var(--page-margin) + 6px)',
           maxWidth: 'min(760px, 88vw)',
           display: 'flex',
@@ -233,6 +235,9 @@ export default function Landing() {
         </div>
       </div>
 
+      {/* ── Grass field — bottom of section ──────────────────────────────── */}
+      <GrassField />
+
       {/* ── Bottom status bar ─────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
@@ -267,7 +272,7 @@ export default function Landing() {
             fontFamily: "'DM Sans', sans-serif",
             fontSize: '9px',
             letterSpacing: '0.12em',
-            color: '#D91C1C',
+            color: 'rgba(255,255,255,0.6)',
           }}
         >
           ● READY
