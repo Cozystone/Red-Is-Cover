@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGun } from "@/lib/gunContext";
 
@@ -17,6 +17,12 @@ export default function Navigation() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted,  setMounted]  = useState(false);
   const { activate } = useGun();
+  const gunBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleGunClick = () => {
+    const rect = gunBtnRef.current?.getBoundingClientRect();
+    if (rect) activate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -139,7 +145,8 @@ export default function Navigation() {
               {/* ── GUN trigger ── */}
               <li>
                 <button
-                  onClick={activate}
+                  ref={gunBtnRef}
+                  onClick={handleGunClick}
                   style={{
                     fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
                     fontSize:       "10px",

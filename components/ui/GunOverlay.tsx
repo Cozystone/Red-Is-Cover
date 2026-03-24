@@ -145,7 +145,7 @@ function runShatter(
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function GunOverlay() {
-  const { gunState, shatterOrigin, grabGun, fireGun } = useGun()
+  const { gunState, shatterOrigin, navButtonPos, grabGun, fireGun } = useGun()
   const canvasRef    = useRef<HTMLCanvasElement>(null)
   const didShatter   = useRef(false)
 
@@ -190,7 +190,7 @@ export default function GunOverlay() {
             pointerEvents: 'all',
           }}
         >
-          <GunCanvas gunState={gunState} />
+          <GunCanvas gunState={gunState} navButtonPos={navButtonPos} />
 
           {/* Hint text */}
           <div

@@ -5,21 +5,30 @@ import { createContext, useContext, useState, useCallback, ReactNode } from 'rea
 export type GunState = 'idle' | 'dropping' | 'aiming' | 'shattering' | 'revealed'
 
 interface GunCtx {
-  gunState:     GunState
+  gunState:      GunState
   shatterOrigin: { x: number; y: number }
-  activate:     () => void
-  grabGun:      () => void
-  fireGun:      (clientX: number, clientY: number) => void
+  navButtonPos:  { x: number; y: number }   // normalised 0-1 screen coords
+  activate:      (clientX: number, clientY: number) => void
+  grabGun:       () => void
+  fireGun:       (clientX: number, clientY: number) => void
 }
 
 const Ctx = createContext<GunCtx | null>(null)
 
 export function GunProvider({ children }: { children: ReactNode }) {
-  const [gunState,     setGunState]     = useState<GunState>('idle')
+  const [gunState,      setGunState]      = useState<GunState>('idle')
   const [shatterOrigin, setShatterOrigin] = useState({ x: 0.5, y: 0.5 })
+  const [navButtonPos,  setNavButtonPos]  = useState({ x: 0.9, y: 0.03 })
 
-  const activate = useCallback(() => setGunState('dropping'), [])
-  const grabGun  = useCallback(() => setGunState('aiming'),   [])
+  const activate = useCallback((clientX: number, clientY: number) => {
+    setNavButtonPos({
+      x: clientX / window.innerWidth,
+      y: clientY / window.innerHeight,
+    })
+    setGunState('dropping')
+  }, [])
+
+  const grabGun  = useCallback(() => setGunState('aiming'), [])
 
   const fireGun = useCallback((clientX: number, clientY: number) => {
     setShatterOrigin({
@@ -35,7 +44,7 @@ export function GunProvider({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <Ctx.Provider value={{ gunState, shatterOrigin, activate, grabGun, fireGun }}>
+    <Ctx.Provider value={{ gunState, shatterOrigin, navButtonPos, activate, grabGun, fireGun }}>
       {children}
     </Ctx.Provider>
   )

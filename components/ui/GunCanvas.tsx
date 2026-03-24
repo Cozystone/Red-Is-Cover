@@ -23,17 +23,20 @@ function fitToSize(obj: THREE.Object3D, targetUnits: number) {
 
 // ── Gun mesh ─────────────────────────────────────────────────────────────────
 
-function GunMesh({ gunState }: { gunState: GunState }) {
-  const { scene }  = useGLTF('/gun.glb')
-  const groupRef   = useRef<THREE.Group>(null)
-  const { viewport, size } = useThree()
+interface GunMeshProps {
+  gunState:     GunState
+  navButtonPos: { x: number; y: number }   // normalised 0-1
+}
 
-  // Shared refs — avoid re-renders
-  const mouse   = useRef({ x: 0, y: 0 })      // NDC [-1..1]
-  const dropY   = useRef(20)
-  const phase   = useRef(Math.random() * Math.PI * 2)
-  const scaled  = useRef(false)
-  const clone   = useRef(scene.clone(true))
+function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
+  const { scene }           = useGLTF('/gun.glb')
+  const groupRef            = useRef<THREE.Group>(null)
+  const { viewport, size }  = useThree()
+
+  const mouse      = useRef({ x: 0, y: 0 })   // NDC [-1..1]
+  const phase      = useRef(Math.random() * Math.PI * 2)
+  const baseScale  = useRef(0)                 // computed once from the model
+  const clone      = useRef(scene.clone(true))
 
   // Track mouse in NDC space
   useEffect(() => {
@@ -45,59 +48,76 @@ function GunMesh({ gunState }: { gunState: GunState }) {
     return () => window.removeEventListener('mousemove', fn)
   }, [size])
 
-  // Reset drop animation when transitioning to dropping
+  // When entering 'dropping', push the gun above the viewport so it slides in
   useEffect(() => {
-    if (gunState === 'dropping') dropY.current = 20
-  }, [gunState])
+    if (gunState === 'dropping' && groupRef.current) {
+      groupRef.current.position.set(0, viewport.height, 0)
+    }
+  }, [gunState, viewport.height])
 
   useFrame((_, dt) => {
     const g = groupRef.current
     if (!g) return
 
-    // One-time scale fit
-    if (!scaled.current) {
-      const s = fitToSize(clone.current, 1.8)
-      g.scale.setScalar(s)
-      scaled.current = true
+    // Compute base scale once (normalised to 1 world unit)
+    if (baseScale.current === 0) {
+      baseScale.current = fitToSize(clone.current, 1.0)
     }
+    const base = baseScale.current
+
+    // ── Nav-button world position ─────────────────────────────────────────
+    const navWx = (navButtonPos.x * 2 - 1)       * (viewport.width  / 2)
+    const navWy = (1 - navButtonPos.y * 2)        * (viewport.height / 2)
 
     if (gunState === 'dropping') {
-      // Animate drop: gun enters from above, handle pointing down toward viewer
-      const topEdge = viewport.height / 2 - 0.6   // handle hovers just inside top
-      dropY.current += (topEdge - dropY.current) * 0.04
+      // ── Scale: small — only the handle region is visible ─────────────
+      g.scale.setScalar(base * 1.6)
 
-      phase.current += dt * 1.0
-      const bob = Math.sin(phase.current) * 0.07
+      // ── Position: handle at nav button, barrel off-screen above ──────
+      // rotation.x = PI → grip is at the bottom of the gun in world space
+      // gun center sits ~0.6 units above grip → offset navWy upward
+      const targetX = navWx
+      const targetY = navWy + 0.6
+      g.position.x += (targetX - g.position.x) * 0.10
+      g.position.y += (targetY - g.position.y) * 0.10
+      g.position.z  = 0
 
-      g.position.x = 0
-      g.position.y = dropY.current + bob
-      g.position.z = 0
+      // Gentle handle bob
+      phase.current += dt * 0.9
+      g.position.y  += Math.sin(phase.current) * 0.03
 
-      // Barrel points upward (rotate 180° on X so grip faces down)
-      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, Math.PI, dt * 3)
-      // Slow spin on Y to show 3D depth
-      g.rotation.y += dt * 0.45
-      g.rotation.z = 0
+      // Barrel points straight up, grip faces down (toward viewer)
+      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, Math.PI, dt * 6)
+      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, 0,        dt * 6)
+      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0,        dt * 6)
 
     } else if (gunState === 'aiming') {
-      // Smoothly follow cursor in world space
-      const wx = mouse.current.x * (viewport.width  / 2)
-      const wy = mouse.current.y * (viewport.height / 2)
-      g.position.x += (wx - g.position.x) * 0.14
-      g.position.y += (wy - g.position.y) * 0.14
-      g.position.z = 0
+      // ── Scale: large — first-person FPS view ─────────────────────────
+      g.scale.setScalar(base * 4.5)
 
-      // Horizontal aim: barrel points forward-right
-      // rotation.x = 0 (level), rotation.y = PI/2 (side view showing barrel length)
-      // rotation.z = slight lean based on cursor X
-      const lean = mouse.current.x * 0.15
-      g.rotation.x += (0                  - g.rotation.x) * 0.12
-      g.rotation.y += ((Math.PI / 2)      - g.rotation.y) * 0.12
-      g.rotation.z += (lean               - g.rotation.z) * 0.10
+      // ── Position: lower-right quadrant, fixed anchor point ───────────
+      const fpX = viewport.width  *  0.18
+      const fpY = viewport.height * -0.30
+      g.position.x += (fpX - g.position.x) * 0.09
+      g.position.y += (fpY - g.position.y) * 0.09
+      g.position.z  = 0
+
+      // Subtle idle hand-wobble
+      phase.current += dt * 1.1
+      g.position.x  += Math.sin(phase.current * 0.7) * 0.04
+      g.position.y  += Math.sin(phase.current)       * 0.025
+
+      // ── Rotation: diagonal view so barrel length is visible, cursor-driven aim
+      const aimX = mouse.current.x * 0.20   // horizontal aim lean
+      const aimY = mouse.current.y * 0.18   // vertical aim tilt
+
+      g.rotation.x += ((-0.15 + aimY) - g.rotation.x) * 0.10
+      // PI * 0.45 ≈ 81° → diagonal between side-view and front-view
+      g.rotation.y += ((Math.PI * 0.45 + aimX * 0.5) - g.rotation.y) * 0.10
+      g.rotation.z += ((-aimX * 0.10)                - g.rotation.z) * 0.08
     }
   })
 
-  // Only render during interactive states
   if (gunState !== 'dropping' && gunState !== 'aiming') return null
 
   return (
@@ -109,14 +129,19 @@ function GunMesh({ gunState }: { gunState: GunState }) {
 
 // ── Canvas wrapper ───────────────────────────────────────────────────────────
 
-export default function GunCanvas({ gunState }: { gunState: GunState }) {
+interface GunCanvasProps {
+  gunState:     GunState
+  navButtonPos: { x: number; y: number }
+}
+
+export default function GunCanvas({ gunState, navButtonPos }: GunCanvasProps) {
   return (
     <Canvas
       gl={{
-        alpha:            true,
-        antialias:        true,
-        powerPreference:  'high-performance',
-        toneMapping:      THREE.ACESFilmicToneMapping,
+        alpha:               true,
+        antialias:           true,
+        powerPreference:     'high-performance',
+        toneMapping:         THREE.ACESFilmicToneMapping,
         toneMappingExposure: 1.4,
       }}
       camera={{ position: [0, 0, 10], fov: 45 }}
@@ -129,7 +154,7 @@ export default function GunCanvas({ gunState }: { gunState: GunState }) {
       <pointLight       position={[0,  3,  4]}   intensity={1.2} color="#ff3300" />
       <pointLight       position={[0, -2,  3]}   intensity={0.6} color="#ffffff" />
 
-      <GunMesh gunState={gunState} />
+      <GunMesh gunState={gunState} navButtonPos={navButtonPos} />
     </Canvas>
   )
 }
