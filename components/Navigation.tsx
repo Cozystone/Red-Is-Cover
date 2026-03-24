@@ -74,7 +74,7 @@ export default function Navigation() {
           href="/"
           aria-label="RED IS COVER — Home"
           style={{
-            fontFamily:     "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
             fontSize:       "11px",
             fontWeight:     500,
             letterSpacing:  "0.2em",
@@ -116,7 +116,7 @@ export default function Navigation() {
                     href={href}
                     className="nav-link"
                     style={{
-                      fontFamily:     "'DM Sans', 'Helvetica Neue', sans-serif",
+                      fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
                       fontSize:       "10px",
                       fontWeight:     500,
                       letterSpacing:  "0.2em",
@@ -280,7 +280,7 @@ export default function Navigation() {
                       href={href}
                       onClick={() => setMenuOpen(false)}
                       style={{
-                        fontFamily:     "'Cormorant Garamond', Georgia, serif",
+                        fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
                         fontSize:       "clamp(2rem, 8vw, 3.5rem)",
                         fontWeight:     300,
                         fontStyle:      "normal",
@@ -294,7 +294,7 @@ export default function Navigation() {
                     >
                       <span
                         style={{
-                          fontFamily:    "'DM Sans', sans-serif",
+                          fontFamily:    "'Helvetica Neue', Helvetica, Arial, sans-serif",
                           fontSize:      "11px",
                           fontWeight:    400,
                           letterSpacing: "0.15em",

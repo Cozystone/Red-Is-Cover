@@ -371,7 +371,7 @@ export default function GunOverlay() {
         style={{
           position:      'fixed',
           inset:         0,
-          zIndex:        400,
+          zIndex:        0,
           pointerEvents: 'none',
           width:         '100%',
           height:        '100%',
