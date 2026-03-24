@@ -33,10 +33,11 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
   const groupRef            = useRef<THREE.Group>(null)
   const { viewport, size }  = useThree()
 
-  const mouse      = useRef({ x: 0, y: 0 })   // NDC [-1..1]
-  const phase      = useRef(Math.random() * Math.PI * 2)
-  const baseScale  = useRef(0)                 // computed once from the model
-  const clone      = useRef(scene.clone(true))
+  const mouse        = useRef({ x: 0, y: 0 })   // NDC [-1..1]
+  const phase        = useRef(Math.random() * Math.PI * 2)
+  const baseScale    = useRef(0)                 // computed once from the model
+  const clone        = useRef(scene.clone(true))
+  const dropReady    = useRef(false)             // whether drop start pos was set
 
   // Track mouse in NDC space
   useEffect(() => {
@@ -48,12 +49,10 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
     return () => window.removeEventListener('mousemove', fn)
   }, [size])
 
-  // When entering 'dropping', push the gun above the viewport so it slides in
+  // Reset drop flag when entering dropping state
   useEffect(() => {
-    if (gunState === 'dropping' && groupRef.current) {
-      groupRef.current.position.set(0, viewport.height, 0)
-    }
-  }, [gunState, viewport.height])
+    if (gunState === 'dropping') dropReady.current = false
+  }, [gunState])
 
   useFrame((_, dt) => {
     const g = groupRef.current
@@ -70,22 +69,23 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
     const navWy = (1 - navButtonPos.y * 2)        * (viewport.height / 2)
 
     if (gunState === 'dropping') {
-      // ── Scale: small — handle visible at nav bar ──────────────────────
+      // ── Scale ─────────────────────────────────────────────────────────
       g.scale.setScalar(base * 1.6)
 
-      // ── Position: centered on nav button ─────────────────────────────
-      g.position.x += (navWx - g.position.x) * 0.10
-      g.position.y += (navWy - g.position.y) * 0.10
+      // ── First frame: snap to start position far above nav button ──────
+      if (!dropReady.current) {
+        g.position.set(navWx, navWy + viewport.height, 0)
+        g.rotation.set(0, Math.PI / 2, 0)
+        dropReady.current = true
+      }
+
+      // ── Drop straight down — x locked, y eases to nav position ───────
+      g.position.x  = navWx
+      g.position.y += (navWy - g.position.y) * 0.07
       g.position.z  = 0
 
-      // Gentle bob
-      phase.current += dt * 0.9
-      g.position.y  += Math.sin(phase.current) * 0.03
-
-      // ── Side view: barrel points right, grip at bottom ────────────────
-      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, 0,             dt * 6)
-      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, Math.PI / 2,   dt * 6)
-      g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, 0,             dt * 6)
+      // ── Perfect side view, no rotation animation ──────────────────────
+      g.rotation.set(0, Math.PI / 2, 0)
 
     } else if (gunState === 'aiming') {
       // ── Scale: medium — gun follows cursor ────────────────────────────
