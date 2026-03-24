@@ -1,5 +1,4 @@
-/* Contact Section — light contrast after dark Profile */
-/* Replaces previous Contact.tsx */
+/* Contact Section — dark cinematic ending */
 
 export default function Contact() {
   return (
@@ -7,213 +6,185 @@ export default function Contact() {
       id="contact"
       aria-label="Contact"
       style={{
-        backgroundColor: '#FAF8F5',
-        paddingTop: 'clamp(96px, 12vw, 192px)',
-        paddingBottom: 'clamp(64px, 8vw, 96px)',
-        paddingLeft: 'var(--page-margin)',
-        paddingRight: 'var(--page-margin)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        textAlign: 'center',
-        minHeight: '70vh',
-        justifyContent: 'space-between',
+        position:        'relative',
+        backgroundColor: '#060606',
+        paddingTop:      'clamp(96px, 12vw, 180px)',
+        paddingBottom:   'clamp(48px, 6vw, 80px)',
+        paddingLeft:     'var(--page-margin)',
+        paddingRight:    'var(--page-margin)',
+        minHeight:       '75vh',
+        display:         'flex',
+        flexDirection:   'column',
+        justifyContent:  'space-between',
+        overflow:        'hidden',
       }}
     >
-      {/* ── Main content (centered) ─────────────────────────────────────── */}
+      {/* ── Huge background numeral ──────────────────────────────────────── */}
       <div
+        aria-hidden="true"
         style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: 'clamp(28px, 4vw, 48px)',
-          flex: 1,
-          justifyContent: 'center',
-          paddingBottom: 'clamp(48px, 6vw, 80px)',
-          width: '100%',
+          position:    'absolute',
+          right:       'calc(var(--page-margin) - 20px)',
+          bottom:      '-40px',
+          fontFamily:  "'Cormorant Garamond', Georgia, serif",
+          fontSize:    'clamp(200px, 30vw, 420px)',
+          fontWeight:  300,
+          lineHeight:  1,
+          color:       'rgba(217,28,28,0.06)',
+          userSelect:  'none',
+          pointerEvents: 'none',
         }}
       >
-        {/* Section label */}
+        06
+      </div>
+
+      {/* ── Main content ────────────────────────────────────────────────── */}
+      <div>
+        {/* Label */}
         <p
           style={{
-            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-            fontSize: '10px',
-            fontWeight: 500,
+            fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize:      '10px',
+            fontWeight:    500,
             letterSpacing: '0.22em',
             textTransform: 'uppercase',
-            color: '#D91C1C',
+            color:         '#D91C1C',
+            marginBottom:  '48px',
           }}
         >
           06 — CONTACT
         </p>
 
-        {/* Main heading */}
-        <h2
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 'clamp(3rem, 7vw, 8rem)',
-            fontWeight: 300,
-            lineHeight: 1.05,
-            color: '#060606',
-            letterSpacing: '-0.02em',
-          }}
-        >
-          Begin a
-          <br />
-          conversation.
-        </h2>
-
-        {/* Decorative red circle */}
+        {/* Red divider */}
         <div
           aria-hidden="true"
+          style={{ height: '1px', width: '100%', backgroundColor: 'rgba(217,28,28,0.25)', marginBottom: '64px' }}
+        />
+
+        {/* Headline */}
+        <h2
           style={{
-            width: '80px',
-            height: '80px',
-            borderRadius: '50%',
-            border: '2px solid #D91C1C',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            fontFamily:    "'Cormorant Garamond', Georgia, serif",
+            fontSize:      'clamp(3.5rem, 7vw, 9rem)',
+            fontWeight:    300,
+            lineHeight:    1.0,
+            color:         '#FAF8F5',
+            letterSpacing: '-0.02em',
+            marginBottom:  'clamp(48px, 6vw, 80px)',
           }}
         >
-          <span
-            style={{
-              color: '#D91C1C',
-              fontSize: '20px',
-              fontFamily: "'DM Sans', sans-serif",
-              lineHeight: 1,
-            }}
-          >
-            →
-          </span>
-        </div>
+          Begin a<br />
+          <em style={{ color: '#D91C1C', fontStyle: 'italic' }}>conversation.</em>
+        </h2>
 
-        {/* Email link */}
-        <a
-          href="mailto:hello@red-is-cover.world"
-          className="contact-email-new"
-          style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: 'clamp(1.2rem, 2.5vw, 2.2rem)',
-            fontWeight: 300,
-            color: '#060606',
-            textDecoration: 'none',
-            position: 'relative',
-          }}
-        >
-          hello@red-is-cover.world
-        </a>
-
-        {/* Social row */}
+        {/* Email + social row */}
         <div
           style={{
-            display: 'flex',
-            gap: '32px',
-            alignItems: 'center',
+            display:        'flex',
+            flexWrap:       'wrap',
+            alignItems:     'baseline',
+            gap:            '40px',
+            marginBottom:   'clamp(64px, 8vw, 96px)',
           }}
         >
           <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="nav-link-underline"
+            href="mailto:hello@red-is-cover.world"
+            className="contact-email"
             style={{
-              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-              fontSize: '10px',
-              fontWeight: 500,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: '#8A8A8A',
+              fontFamily:    "'Cormorant Garamond', Georgia, serif",
+              fontSize:      'clamp(1.3rem, 2.5vw, 2.2rem)',
+              fontWeight:    300,
+              color:         '#FAF8F5',
               textDecoration: 'none',
+              position:      'relative',
             }}
           >
-            Instagram
+            hello@red-is-cover.world
           </a>
-          <span
-            aria-hidden="true"
-            style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: '10px',
-              color: 'rgba(6,6,6,0.2)',
-            }}
-          >
-            —
-          </span>
-          <a
-            href="https://linkedin.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="nav-link-underline"
-            style={{
-              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-              fontSize: '10px',
-              fontWeight: 500,
-              letterSpacing: '0.2em',
-              textTransform: 'uppercase',
-              color: '#8A8A8A',
-              textDecoration: 'none',
-            }}
-          >
-            LinkedIn
-          </a>
+
+          <div style={{ display: 'flex', gap: '28px' }}>
+            {['Instagram', 'LinkedIn'].map((s) => (
+              <a
+                key={s}
+                href={s === 'Instagram' ? 'https://instagram.com' : 'https://linkedin.com'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="nav-link-underline"
+                style={{
+                  fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+                  fontSize:      '10px',
+                  fontWeight:    500,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  color:         'rgba(255,255,255,0.4)',
+                  textDecoration: 'none',
+                }}
+              >
+                {s}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* ── Footer ─────────────────────────────────────────────────────── */}
+      {/* ── Footer bar ──────────────────────────────────────────────────── */}
       <footer
         style={{
-          width: '100%',
-          paddingTop: '32px',
-          borderTop: '1px solid rgba(6,6,6,0.08)',
-          display: 'flex',
+          borderTop:      '1px solid rgba(255,255,255,0.08)',
+          paddingTop:     '24px',
+          display:        'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          gap: '12px',
+          alignItems:     'center',
+          flexWrap:       'wrap',
+          gap:            '12px',
         }}
       >
         <p
           style={{
-            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-            fontSize: '10px',
-            fontWeight: 400,
-            letterSpacing: '0.08em',
-            color: '#8A8A8A',
+            fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize:      '9px',
+            letterSpacing: '0.15em',
+            textTransform: 'uppercase',
+            color:         'rgba(255,255,255,0.25)',
           }}
         >
-          &copy; 2025 RED IS COVER.
+          © 2025 RED IS COVER
         </p>
         <p
           style={{
-            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-            fontSize: '10px',
-            fontWeight: 400,
-            letterSpacing: '0.08em',
-            color: '#8A8A8A',
+            fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize:      '9px',
+            letterSpacing: '0.12em',
+            color:         'rgba(255,255,255,0.25)',
           }}
         >
           Every object tells a story.
         </p>
+        <p
+          style={{
+            fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize:      '9px',
+            letterSpacing: '0.18em',
+            textTransform: 'uppercase',
+            color:         '#D91C1C',
+          }}
+        >
+          ● SEOUL, KR
+        </p>
       </footer>
 
-      {/* ── Email hover style ───────────────────────────────────────────── */}
       <style>{`
-        .contact-email-new::after {
+        .contact-email::after {
           content: '';
           position: absolute;
-          bottom: -3px;
-          left: 0;
-          width: 100%;
-          height: 1px;
-          background-color: #D91C1C;
+          bottom: -3px; left: 0;
+          width: 100%; height: 1px;
+          background: #D91C1C;
           transform: scaleX(0);
-          transform-origin: left center;
-          transition: transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+          transform-origin: left;
+          transition: transform 560ms cubic-bezier(0.16,1,0.3,1);
         }
-        .contact-email-new:hover::after {
-          transform: scaleX(1);
-        }
+        .contact-email:hover::after { transform: scaleX(1); }
       `}</style>
     </section>
   )

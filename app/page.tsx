@@ -1,4 +1,4 @@
-import Navigation from "@/components/Navigation";
+import KeychainNav from "@/components/ui/KeychainNav";
 import VideoHero from "@/components/sections/VideoHero";
 import Landing from "@/components/sections/Landing";
 import World from "@/components/sections/World";
@@ -17,7 +17,7 @@ export default function Home() {
     <GunProvider>
       <CustomCursor />
       <BackgroundField />
-      <Navigation />
+      <KeychainNav />
       <GunOverlay />
       <main style={{ position: 'relative', zIndex: 1 }}>
 

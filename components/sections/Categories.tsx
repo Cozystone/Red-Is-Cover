@@ -117,7 +117,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
       animate={{
-        backgroundColor: hovered ? 'rgba(6,6,6,0.03)' : 'transparent',
+        backgroundColor: hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
       }}
       transition={{ duration: 0.18 }}
       style={{
@@ -126,7 +126,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
         alignItems: 'center',
         gap: '24px',
         padding: '28px 0',
-        borderBottom: '1px solid rgba(6,6,6,0.1)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
         cursor: 'pointer',
       }}
     >
@@ -136,7 +136,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
           fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
           fontSize: '10px',
           letterSpacing: '0.15em',
-          color: '#8A8A8A',
+          color: 'rgba(255,255,255,0.3)',
         }}
       >
         {category.number}
@@ -154,7 +154,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
           fontFamily: "'Cormorant Garamond', Georgia, serif",
           fontSize: 'clamp(1.5rem, 3.5vw, 3.5rem)',
           fontWeight: 300,
-          color: '#060606',
+          color: '#FAF8F5',
           lineHeight: 1.1,
           borderLeftStyle: 'solid',
         }}
@@ -168,7 +168,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
           fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
           fontSize: '10px',
           letterSpacing: '0.12em',
-          color: '#8A8A8A',
+          color: 'rgba(255,255,255,0.3)',
           whiteSpace: 'nowrap',
         }}
       >
@@ -477,7 +477,7 @@ export default function Categories() {
         id="work"
         aria-label="Selected Work"
         style={{
-          backgroundColor: '#FAF8F5',
+          backgroundColor: '#060606',
           paddingTop: 'clamp(96px, 12vw, 192px)',
           paddingBottom: 'clamp(96px, 12vw, 192px)',
           paddingLeft: 'var(--page-margin)',
@@ -507,7 +507,7 @@ export default function Categories() {
               fontFamily: "'Cormorant Garamond', Georgia, serif",
               fontSize: 'clamp(3rem, 8vw, 8rem)',
               fontWeight: 300,
-              color: '#060606',
+              color: '#FAF8F5',
               lineHeight: 1.0,
               letterSpacing: '-0.02em',
               marginBottom: 'clamp(48px, 6vw, 80px)',
@@ -518,7 +518,7 @@ export default function Categories() {
         </ScrollReveal>
 
         {/* ── Category list ────────────────────────────────────────────────── */}
-        <div style={{ borderTop: '1px solid rgba(6,6,6,0.1)' }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
           {CATEGORIES.map((category, i) => (
             <ScrollReveal key={category.key} delay={i * 0.06}>
               <CategoryRow

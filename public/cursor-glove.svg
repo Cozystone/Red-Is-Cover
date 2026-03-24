@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 96" width="80" height="96">
+  <!-- Mickey Mouse white cartoon glove — pointing finger up/right -->
+  <!-- Cuff / wrist band -->
+  <ellipse cx="38" cy="84" rx="22" ry="10" fill="#e8e0d0" stroke="#1a1a1a" stroke-width="2.5"/>
+  <path d="M16 84 Q16 94 38 94 Q60 94 60 84" fill="#c8bfad" stroke="#1a1a1a" stroke-width="2"/>
+  <!-- Cuff detail lines -->
+  <line x1="20" y1="86" x2="56" y2="86" stroke="#aaa090" stroke-width="1.2"/>
+
+  <!-- Palm body -->
+  <path d="M18 75 Q14 60 16 45 Q17 38 22 36 Q26 34 30 38 L32 55 L34 30 Q34 22 39 22 Q44 22 44 30 L44 48 L46 32 Q46 24 51 24 Q56 24 56 32 L56 50 L56 36 Q56 28 61 28 Q66 28 66 36 L64 65 Q63 72 60 76 L18 75Z"
+        fill="#f5f0e8" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+
+  <!-- Finger separation lines -->
+  <path d="M44 48 Q44 38 44 30" stroke="#1a1a1a" stroke-width="1.2" fill="none" opacity="0.5"/>
+  <path d="M56 50 Q56 38 56 32" stroke="#1a1a1a" stroke-width="1.2" fill="none" opacity="0.5"/>
+  <path d="M32 55 Q32 44 32 38" stroke="#1a1a1a" stroke-width="1.2" fill="none" opacity="0.5"/>
+
+  <!-- Thumb bump (left side) -->
+  <path d="M18 60 Q10 55 10 48 Q10 40 18 40 Q22 40 22 48 L22 60Z"
+        fill="#f5f0e8" stroke="#1a1a1a" stroke-width="2.2"/>
+
+  <!-- Three knuckle dots on palm -->
+  <circle cx="36" cy="62" r="2" fill="#d4c8b0"/>
+  <circle cx="44" cy="62" r="2" fill="#d4c8b0"/>
+  <circle cx="52" cy="62" r="2" fill="#d4c8b0"/>
+
+  <!-- Button / stitch on wrist -->
+  <circle cx="38" cy="78" r="3.5" fill="none" stroke="#aaa090" stroke-width="1.2"/>
+  <line x1="36" y1="78" x2="40" y2="78" stroke="#aaa090" stroke-width="1"/>
+  <line x1="38" y1="76" x2="38" y2="80" stroke="#aaa090" stroke-width="1"/>
+</svg>
