@@ -75,7 +75,7 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       // ── First frame: snap to start position far above viewport ───────
       if (!dropReady.current) {
         g.position.set(navWx, viewport.height, 0)
-        g.rotation.set(0, -Math.PI / 2, -Math.PI / 2)
+        g.rotation.set(Math.PI / 2, Math.PI / 2, 0)
         dropReady.current = true
       }
 
@@ -85,8 +85,8 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       g.position.y += (targetY - g.position.y) * 0.07
       g.position.z  = 0
 
-      // ── Flipped side view, rotated 90° clockwise ──────────────────────
-      g.rotation.set(0, -Math.PI / 2, -Math.PI / 2)
+      // ── Side view: Y=PI/2, X=PI/2 CW → handle points down ───────────
+      g.rotation.set(Math.PI / 2, Math.PI / 2, 0)
 
     } else if (gunState === 'aiming') {
       // ── Scale: medium — gun follows cursor ────────────────────────────
