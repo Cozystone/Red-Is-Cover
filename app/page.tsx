@@ -1,4 +1,5 @@
 import Navigation from "@/components/Navigation";
+import VideoHero from "@/components/sections/VideoHero";
 import Landing from "@/components/sections/Landing";
 import World from "@/components/sections/World";
 import Categories from "@/components/sections/Categories";
@@ -16,6 +17,7 @@ export default function Home() {
       <BackgroundField />
       <Navigation />
       <main style={{ position: 'relative', zIndex: 1 }}>
+        <VideoHero />
         <Landing />
         <World />
         <Categories />
