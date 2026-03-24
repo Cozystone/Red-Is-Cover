@@ -24,11 +24,12 @@ function fitToSize(obj: THREE.Object3D, targetUnits: number) {
 // ── Gun mesh ─────────────────────────────────────────────────────────────────
 
 interface GunMeshProps {
-  gunState:     GunState
-  navButtonPos: { x: number; y: number }   // normalised 0-1
+  gunState:      GunState
+  navButtonPos:  { x: number; y: number }   // normalised 0-1
+  updateAimPos:  (nx: number, ny: number) => void
 }
 
-function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
+function GunMesh({ gunState, navButtonPos, updateAimPos }: GunMeshProps) {
   const { scene }           = useGLTF('/gun.glb')
   const groupRef            = useRef<THREE.Group>(null)
   const { viewport, size }  = useThree()
@@ -109,6 +110,11 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       g.rotation.x += (0      - g.rotation.x) * 0.10
       g.rotation.y += (Math.PI - g.rotation.y) * 0.10
       g.rotation.z += (lean   - g.rotation.z) * 0.08
+
+      // ── Report gun screen position for bullet impact tracking ─────────
+      const nx = (g.position.x / (viewport.width  / 2) + 1) * 0.5
+      const ny = (1 - g.position.y / (viewport.height / 2)) * 0.5
+      updateAimPos(nx, ny)
     }
   })
 
@@ -124,11 +130,12 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
 // ── Canvas wrapper ───────────────────────────────────────────────────────────
 
 interface GunCanvasProps {
-  gunState:     GunState
-  navButtonPos: { x: number; y: number }
+  gunState:      GunState
+  navButtonPos:  { x: number; y: number }
+  updateAimPos:  (nx: number, ny: number) => void
 }
 
-export default function GunCanvas({ gunState, navButtonPos }: GunCanvasProps) {
+export default function GunCanvas({ gunState, navButtonPos, updateAimPos }: GunCanvasProps) {
   return (
     <Canvas
       gl={{
@@ -148,7 +155,7 @@ export default function GunCanvas({ gunState, navButtonPos }: GunCanvasProps) {
       <pointLight       position={[0,  3,  4]}   intensity={1.2} color="#ff3300" />
       <pointLight       position={[0, -2,  3]}   intensity={0.6} color="#ffffff" />
 
-      <GunMesh gunState={gunState} navButtonPos={navButtonPos} />
+      <GunMesh gunState={gunState} navButtonPos={navButtonPos} updateAimPos={updateAimPos} />
     </Canvas>
   )
 }
