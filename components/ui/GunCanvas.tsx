@@ -72,16 +72,18 @@ function GunMesh({ gunState, navButtonPos }: GunMeshProps) {
       // ── Scale ─────────────────────────────────────────────────────────
       g.scale.setScalar(base * 1.6)
 
-      // ── First frame: snap to start position far above nav button ──────
+      // ── First frame: snap to start position far above viewport ───────
       if (!dropReady.current) {
-        g.position.set(navWx, navWy + viewport.height, 0)
+        g.position.set(navWx, viewport.height, 0)
         g.rotation.set(0, Math.PI / 2, 0)
         dropReady.current = true
       }
 
-      // ── Drop straight down — x locked, y eases to nav position ───────
+      // ── Drop straight down — x locked, y eases to upper-screen rest ──
+      // targetY: screen centre + 40% of half-height → clearly visible
+      const targetY = viewport.height * 0.25
       g.position.x  = navWx
-      g.position.y += (navWy - g.position.y) * 0.07
+      g.position.y += (targetY - g.position.y) * 0.07
       g.position.z  = 0
 
       // ── Perfect side view, no rotation animation ──────────────────────
