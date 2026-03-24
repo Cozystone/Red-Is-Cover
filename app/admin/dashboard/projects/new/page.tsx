@@ -39,7 +39,7 @@ export default function NewProjectPage() {
             textDecoration: 'none',
           }}
         >
-          ANSEO ADMIN
+          RED IS COVER — ADMIN
         </Link>
 
         <Link

@@ -91,7 +91,7 @@ export default function Contact() {
 
         {/* Email link */}
         <a
-          href="mailto:hello@anseo.world"
+          href="mailto:hello@red-is-cover.world"
           className="contact-email-new"
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
@@ -102,7 +102,7 @@ export default function Contact() {
             position: 'relative',
           }}
         >
-          hello@anseo.world
+          hello@red-is-cover.world
         </a>
 
         {/* Social row */}
@@ -182,7 +182,7 @@ export default function Contact() {
             color: '#8A8A8A',
           }}
         >
-          &copy; 2025 ANSEO.
+          &copy; 2025 RED IS COVER.
         </p>
         <p
           style={{

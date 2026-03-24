@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "ANSEO — Creative Direction",
+  title: "RED IS COVER — Creative Direction",
   description: "A search for humanity in a cold, accelerating age.",
   openGraph: {
-    title: "ANSEO — Creative Direction",
+    title: "RED IS COVER — Creative Direction",
     description: "A search for humanity in a cold, accelerating age.",
     type: "website",
   },

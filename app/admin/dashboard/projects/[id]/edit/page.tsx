@@ -50,7 +50,7 @@ export default async function EditProjectPage({ params }: EditProjectPageProps) 
             textDecoration: 'none',
           }}
         >
-          ANSEO ADMIN
+          RED IS COVER — ADMIN
         </Link>
 
         <Link

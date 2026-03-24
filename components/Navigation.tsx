@@ -64,7 +64,7 @@ export default function Navigation() {
         {/* LEFT — wordmark */}
         <a
           href="/"
-          aria-label="ANSEO — Home"
+          aria-label="RED IS COVER — Home"
           style={{
             fontFamily:     "'DM Sans', 'Helvetica Neue', sans-serif",
             fontSize:       "11px",
@@ -78,7 +78,7 @@ export default function Navigation() {
             transition:     "color 300ms ease",
           }}
         >
-          ANSEO
+          RED IS COVER
         </a>
 
         {/* CENTER — intentionally empty */}

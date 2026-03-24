@@ -76,7 +76,7 @@ export default function Landing() {
             transform: 'translateX(-50%)',
           }}
         >
-          ANSEO.WORLD — ENTERING
+          RED-IS-COVER.WORLD — ENTERING
         </p>
 
         {/* Right — year */}

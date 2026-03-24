@@ -2,7 +2,7 @@
 /* Dark dossier / coordinates aesthetic */
 
 const DOSSIER_ROWS: { key: string; value: string }[] = [
-  { key: 'SUBJECT', value: 'ANSEO' },
+  { key: 'SUBJECT', value: 'RED IS COVER' },
   { key: 'STATUS', value: 'Emerging Creative Director' },
   { key: 'BORN', value: '2007, Seoul, Korea' },
   { key: 'SCHOOL', value: 'High School Student' },

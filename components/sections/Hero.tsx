@@ -58,7 +58,7 @@ export default function Hero() {
             color: "var(--color-void)",
           }}
         >
-          ANSEO.WORLD — CREATIVE DIRECTION — 2025
+          RED-IS-COVER.WORLD — CREATIVE DIRECTION — 2025
         </p>
 
         <p

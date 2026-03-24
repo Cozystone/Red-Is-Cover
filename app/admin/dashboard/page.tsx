@@ -109,7 +109,7 @@ export default function DashboardPage() {
             color: '#ffffff',
           }}
         >
-          ANSEO ADMIN
+          RED IS COVER — ADMIN
         </span>
 
         <button
