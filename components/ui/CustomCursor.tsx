@@ -14,9 +14,9 @@ export default function CustomCursor() {
 
   useEffect(() => {
     setMounted(true);
-    const mq = window.matchMedia("(pointer: coarse)");
-    setIsPointerFine(!mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setIsPointerFine(!e.matches);
+    const mq = window.matchMedia("(any-pointer: fine)");
+    setIsPointerFine(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setIsPointerFine(e.matches);
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
   }, []);
