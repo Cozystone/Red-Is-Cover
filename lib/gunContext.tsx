@@ -42,9 +42,8 @@ export function GunProvider({ children }: { children: ReactNode }) {
   const fireGun = useCallback(() => {
     setShatterOrigin({ ...aimPos.current })
     setGunState('shattering')
-    setTimeout(() => {
-      document.getElementById('landing')?.scrollIntoView({ behavior: 'smooth' })
-    }, 900)
+    // Landing is now positioned behind VideoHero (same viewport) —
+    // no scroll needed; VideoHero simply fades out to reveal it.
     setTimeout(() => setGunState('revealed'), 1800)
   }, [])
 

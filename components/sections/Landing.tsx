@@ -11,8 +11,7 @@ export default function Landing() {
       style={{
         position: 'relative',
         width: '100%',
-        height: '100svh',
-        minHeight: '600px',
+        height: '100%',          // fills the absolute parent in page.tsx
         background: 'linear-gradient(180deg, #B00015 0%, #7A0010 70%, #3A0008 100%)',
         overflow: 'hidden',
       }}

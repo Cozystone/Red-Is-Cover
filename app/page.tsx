@@ -20,8 +20,28 @@ export default function Home() {
       <Navigation />
       <GunOverlay />
       <main style={{ position: 'relative', zIndex: 1 }}>
-        <VideoHero />
-        <Landing />
+
+        {/* ── First viewport: Landing behind VideoHero ──────────────────── */}
+        {/* Landing (red+grass) is the "room" behind the sea-window glass.   */}
+        {/* VideoHero (sea video) sits in front; gun shot reveals Landing.   */}
+        <div style={{
+          position:   'relative',
+          height:     '100svh',
+          minHeight:  '600px',
+          overflow:   'hidden',
+        }}>
+          {/* Landing — lower z-index, visually behind */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 1 }}>
+            <Landing />
+          </div>
+
+          {/* VideoHero — higher z-index, in front (the "glass" that gets shot) */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+            <VideoHero />
+          </div>
+        </div>
+
+        {/* ── Rest of page ─────────────────────────────────────────────────── */}
         <World />
         <Categories />
         <Archive />

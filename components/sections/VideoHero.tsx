@@ -1,19 +1,33 @@
 'use client'
 
-/* VideoHero — fullscreen looping video with Red Is Cover title */
+/* VideoHero — fullscreen looping video with Red Is Cover title.
+   When the gun is fired and gunState reaches 'revealed', this section
+   transitions out (fades + subtle scale) to expose the Landing (red room)
+   that was positioned behind it. */
+
+import { useGun } from '@/lib/gunContext'
 
 export default function VideoHero() {
+  const { gunState } = useGun()
+  const revealed = gunState === 'revealed' || gunState === 'shattering'
+
   return (
     <section
       id="home"
       aria-label="Red Is Cover"
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100svh',
-        minHeight: '600px',
-        overflow: 'hidden',
+        position:       'relative',
+        width:          '100%',
+        height:         '100%',       // fills parent absolute container
+        overflow:       'hidden',
         backgroundColor: '#000',
+        // Fade out when gun reveals the Landing behind it
+        opacity:        revealed ? 0 : 1,
+        transform:      revealed ? 'scale(1.04)' : 'scale(1)',
+        transition:     revealed
+          ? 'opacity 1.4s cubic-bezier(0.4,0,0.2,1) 0.6s, transform 1.6s cubic-bezier(0.4,0,0.2,1) 0.4s'
+          : 'none',
+        pointerEvents:  revealed ? 'none' : 'auto',
       }}
     >
       {/* ── Looping background video ─────────────────────────────────────── */}
@@ -24,11 +38,11 @@ export default function VideoHero() {
         playsInline
         aria-hidden="true"
         style={{
-          position:   'absolute',
-          inset:      0,
-          width:      '100%',
-          height:     '100%',
-          objectFit:  'cover',
+          position:       'absolute',
+          inset:          0,
+          width:          '100%',
+          height:         '100%',
+          objectFit:      'cover',
           objectPosition: 'center',
         }}
       >
@@ -39,9 +53,9 @@ export default function VideoHero() {
       <div
         aria-hidden="true"
         style={{
-          position: 'absolute',
-          inset:    0,
-          background: 'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.45) 100%)',
+          position:      'absolute',
+          inset:         0,
+          background:    'radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.45) 100%)',
           pointerEvents: 'none',
         }}
       />
@@ -63,16 +77,16 @@ export default function VideoHero() {
       {/* ── "Red Is Cover" — sky area, upper center ──────────────────────── */}
       <div
         style={{
-          position:  'absolute',
-          top:       'clamp(60px, 12vh, 120px)',
-          left:      0,
-          right:     0,
-          display:   'flex',
+          position:      'absolute',
+          top:           'clamp(60px, 12vh, 120px)',
+          left:          0,
+          right:         0,
+          display:       'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          zIndex:    5,
+          alignItems:    'center',
+          zIndex:        5,
           pointerEvents: 'none',
-          userSelect: 'none',
+          userSelect:    'none',
         }}
       >
         <h1
@@ -84,7 +98,6 @@ export default function VideoHero() {
             lineHeight:    1.0,
             color:         '#C8001A',
             textTransform: 'uppercase',
-            // Subtle text shadow so it reads over the bright sky
             textShadow:    '0 0 60px rgba(0,0,0,0.25), 0 2px 12px rgba(0,0,0,0.35)',
             margin:        0,
           }}
@@ -97,16 +110,16 @@ export default function VideoHero() {
       <div
         aria-hidden="true"
         style={{
-          position:   'absolute',
-          bottom:     'clamp(28px, 5vh, 48px)',
-          left:       '50%',
-          transform:  'translateX(-50%)',
-          display:    'flex',
+          position:      'absolute',
+          bottom:        'clamp(28px, 5vh, 48px)',
+          left:          '50%',
+          transform:     'translateX(-50%)',
+          display:       'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          gap:        '8px',
-          zIndex:     5,
-          opacity:    0.6,
+          alignItems:    'center',
+          gap:           '8px',
+          zIndex:        5,
+          opacity:       0.6,
         }}
       >
         <span
@@ -121,7 +134,6 @@ export default function VideoHero() {
         >
           Scroll
         </span>
-        {/* Animated line */}
         <div
           style={{
             width:           '1px',
@@ -132,7 +144,6 @@ export default function VideoHero() {
         />
       </div>
 
-      {/* ── Keyframe for scroll indicator ────────────────────────────────── */}
       <style>{`
         @keyframes scrollPulse {
           0%, 100% { opacity: 0.3; transform: scaleY(1); }
