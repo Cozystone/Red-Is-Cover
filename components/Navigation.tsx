@@ -3,10 +3,10 @@
 import { useEffect, useState } from "react";
 
 const NAV_LINKS = [
-  { label: "WORK", href: "#work" },
-  { label: "ARCHIVE", href: "#archive" },
-  { label: "ABOUT", href: "#about" },
-  { label: "CONTACT", href: "#contact" },
+  { label: "WORK", num: "01", href: "#work" },
+  { label: "ARCHIVE", num: "02", href: "#archive" },
+  { label: "ABOUT", num: "03", href: "#about" },
+  { label: "CONTACT", num: "04", href: "#contact" },
 ] as const;
 
 export default function Navigation() {
@@ -79,22 +79,25 @@ export default function Navigation() {
             padding: 0,
           }}
         >
-          {NAV_LINKS.map(({ label, href }) => (
+          {NAV_LINKS.map(({ label, num, href }) => (
             <li key={label}>
               <a
                 href={href}
                 className="nav-link-underline"
                 style={{
-                  fontFamily:
-                    "'DM Sans', 'Helvetica Neue', sans-serif, 'Helvetica Neue', sans-serif",
+                  fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
                   fontSize: "11px",
                   fontWeight: 500,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   color: "var(--color-void)",
                   textDecoration: "none",
+                  display: "inline-flex",
+                  alignItems: "baseline",
+                  gap: "5px",
                 }}
               >
+                <span style={{ color: "var(--color-ash)", fontSize: "9px", letterSpacing: "0.1em" }}>{num}</span>
                 {label}
               </a>
             </li>

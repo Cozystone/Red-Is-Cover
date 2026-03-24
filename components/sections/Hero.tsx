@@ -14,6 +14,64 @@ export default function Hero() {
         overflow: "hidden",
       }}
     >
+      {/* ── Window Chrome — top bar ──────────────────────────────────────── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "40px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingLeft: "var(--page-margin)",
+          paddingRight: "var(--page-margin)",
+          borderBottom: "1px solid var(--border-subtle)",
+        }}
+      >
+        {/* Three dots */}
+        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          {(["#C41E1E", "#D4C17A", "#9A9A9A"] as const).map((color, i) => (
+            <div
+              key={i}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                backgroundColor: color,
+                opacity: 0.6,
+              }}
+            />
+          ))}
+        </div>
+        {/* Window title */}
+        <p
+          style={{
+            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize: "9px",
+            fontWeight: 500,
+            letterSpacing: "0.2em",
+            textTransform: "uppercase",
+            color: "var(--color-ash)",
+          }}
+        >
+          ANSEO.WORLD — CREATIVE DIRECTION
+        </p>
+        {/* Version */}
+        <p
+          style={{
+            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize: "9px",
+            letterSpacing: "0.12em",
+            color: "var(--color-ash)",
+          }}
+        >
+          v.2025
+        </p>
+      </div>
+
       {/* ── Symbolic Object — Minimalist Flower (upper-right) ──────────────── */}
       <div
         className="reveal-image"

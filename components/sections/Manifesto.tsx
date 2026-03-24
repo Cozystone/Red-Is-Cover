@@ -54,32 +54,71 @@ export default function Manifesto() {
         in a cold, accelerating age.
       </h2>
 
-      {/* ── Declaration lines (staggered offset) ──────────────────────── */}
+      {/* ── Declaration lines — window frame ──────────────────────────── */}
       <div
+        className="reveal"
         style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: "clamp(16px, 2.5vw, 28px)",
+          border: "1px solid var(--color-void)",
           marginBottom: "clamp(64px, 8vw, 96px)",
         }}
       >
-        {DECLARATIONS.map(({ text, offset }, i) => (
-          <p
-            key={text}
-            className="reveal"
+        {/* Window title bar */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: "12px 20px",
+            borderBottom: "1px solid var(--border-subtle)",
+          }}
+        >
+          {(["#C41E1E", "#D4C17A", "#9A9A9A"] as const).map((color, i) => (
+            <div
+              key={i}
+              style={{ width: 7, height: 7, borderRadius: "50%", backgroundColor: color, opacity: 0.6 }}
+            />
+          ))}
+          <span
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif, Georgia, serif",
-              fontSize: "clamp(28px, 4vw, 52px)",
-              fontWeight: 300,
-              lineHeight: 1.3,
-              color: "var(--color-void)",
-              paddingLeft: offset,
-              transitionDelay: `${(i + 1) * 80}ms`,
+              marginLeft: "8px",
+              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize: "9px",
+              fontWeight: 500,
+              letterSpacing: "0.2em",
+              textTransform: "uppercase",
+              color: "var(--color-ash)",
             }}
           >
-            {text}
-          </p>
-        ))}
+            PHILOSOPHY.TXT
+          </span>
+        </div>
+
+        {/* Declarations */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "clamp(16px, 2.5vw, 28px)",
+            padding: "clamp(24px, 4vw, 48px) clamp(20px, 3vw, 36px)",
+          }}
+        >
+          {DECLARATIONS.map(({ text, offset }, i) => (
+            <p
+              key={text}
+              style={{
+                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontSize: "clamp(28px, 4vw, 52px)",
+                fontWeight: 300,
+                lineHeight: 1.3,
+                color: "var(--color-void)",
+                paddingLeft: offset,
+                transitionDelay: `${(i + 1) * 80}ms`,
+              }}
+            >
+              {text}
+            </p>
+          ))}
+        </div>
       </div>
 
       {/* ── Body paragraph ─────────────────────────────────────────────── */}

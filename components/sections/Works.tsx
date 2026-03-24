@@ -112,6 +112,17 @@ function StandardCard({ project, offset }: StandardCardProps) {
       {/* Meta */}
       <div className="mt-4 space-y-1">
         <p
+          style={{
+            fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
+            fontSize: '9px',
+            letterSpacing: '0.15em',
+            color: '#9A9A9A',
+            marginBottom: '6px',
+          }}
+        >
+          {String(project.id).padStart(3, '0')}
+        </p>
+        <p
           className="text-xs uppercase tracking-widest"
           style={{ color: '#9A9A9A', fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}
         >
@@ -166,6 +177,16 @@ function WideCard({ project }: WideCardProps) {
 
       {/* Text: spans 5 columns, offset by 1 */}
       <div className="col-span-5 col-start-8 flex flex-col justify-end h-full pt-8 space-y-3">
+        <p
+          style={{
+            fontFamily: 'var(--font-sans, DM Sans, sans-serif)',
+            fontSize: '9px',
+            letterSpacing: '0.15em',
+            color: '#9A9A9A',
+          }}
+        >
+          {String(project.id).padStart(3, '0')}
+        </p>
         <p
           className="text-xs uppercase tracking-widest"
           style={{ color: '#9A9A9A', fontFamily: 'var(--font-sans, DM Sans, sans-serif)' }}
