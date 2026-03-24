@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useGun } from "@/lib/gunContext";
 
 const NAV_LINKS = [
   { num: "01", label: "WORLD",   href: "#world"   },
@@ -15,6 +16,7 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [mounted,  setMounted]  = useState(false);
+  const { activate } = useGun();
 
   useEffect(() => {
     setMounted(true);
@@ -133,6 +135,28 @@ export default function Navigation() {
                   </a>
                 </li>
               ))}
+
+              {/* ── GUN trigger ── */}
+              <li>
+                <button
+                  onClick={activate}
+                  style={{
+                    fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
+                    fontSize:       "10px",
+                    fontWeight:     700,
+                    letterSpacing:  "0.25em",
+                    textTransform:  "uppercase",
+                    color:          "#D91C1C",
+                    background:     "none",
+                    border:         "1px solid rgba(217,28,28,0.6)",
+                    padding:        "3px 9px",
+                    cursor:         "none",
+                    lineHeight:     1,
+                  }}
+                >
+                  GUN
+                </button>
+              </li>
             </ul>
           </nav>
 

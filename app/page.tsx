@@ -8,14 +8,17 @@ import Profile from "@/components/sections/Profile";
 import Contact from "@/components/sections/Contact";
 import CustomCursor from "@/components/ui/CustomCursor";
 import BackgroundField from "@/components/ui/BackgroundField";
+import GunOverlay from "@/components/ui/GunOverlay";
+import { GunProvider } from "@/lib/gunContext";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function Home() {
   return (
-    <>
+    <GunProvider>
       <CustomCursor />
       <BackgroundField />
       <Navigation />
+      <GunOverlay />
       <main style={{ position: 'relative', zIndex: 1 }}>
         <VideoHero />
         <Landing />
@@ -25,6 +28,6 @@ export default function Home() {
         <Profile />
         <Contact />
       </main>
-    </>
+    </GunProvider>
   );
 }
