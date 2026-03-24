@@ -13,11 +13,8 @@ export default function Navigation() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 40);
-    };
-
-    handleScroll(); // run once on mount
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -33,17 +30,12 @@ export default function Navigation() {
         zIndex: 100,
         paddingLeft: "var(--page-margin)",
         paddingRight: "var(--page-margin)",
-        paddingTop: "20px",
-        paddingBottom: "20px",
+        height: "48px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        backgroundColor: scrolled
-          ? "var(--color-cream)"
-          : "transparent",
-        borderBottom: scrolled
-          ? "1px solid var(--border-subtle)"
-          : "1px solid transparent",
+        backgroundColor: scrolled ? "var(--color-cream)" : "transparent",
+        borderBottom: scrolled ? "1px solid var(--color-void)" : "1px solid transparent",
         transition: `background-color var(--duration-slow) var(--ease-soft),
                      border-color var(--duration-slow) var(--ease-soft)`,
       }}
@@ -53,10 +45,10 @@ export default function Navigation() {
         href="/"
         aria-label="ANSEO — Home"
         style={{
-          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif, 'Helvetica Neue', sans-serif",
+          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
           fontSize: "11px",
           fontWeight: 500,
-          letterSpacing: "0.18em",
+          letterSpacing: "0.22em",
           textTransform: "uppercase",
           color: "var(--color-void)",
           textDecoration: "none",
@@ -65,7 +57,7 @@ export default function Navigation() {
         ANSEO
       </a>
 
-      {/* CENTER — intentionally empty */}
+      {/* CENTER — empty */}
       <div aria-hidden="true" />
 
       {/* RIGHT — Nav links */}
@@ -73,7 +65,7 @@ export default function Navigation() {
         <ul
           style={{
             display: "flex",
-            gap: "32px",
+            gap: "28px",
             listStyle: "none",
             margin: 0,
             padding: 0,
@@ -86,9 +78,9 @@ export default function Navigation() {
                 className="nav-link-underline"
                 style={{
                   fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-                  fontSize: "11px",
+                  fontSize: "10px",
                   fontWeight: 500,
-                  letterSpacing: "0.18em",
+                  letterSpacing: "0.2em",
                   textTransform: "uppercase",
                   color: "var(--color-void)",
                   textDecoration: "none",
@@ -97,7 +89,15 @@ export default function Navigation() {
                   gap: "5px",
                 }}
               >
-                <span style={{ color: "var(--color-ash)", fontSize: "9px", letterSpacing: "0.1em" }}>{num}</span>
+                <span
+                  style={{
+                    color: "var(--color-ash)",
+                    fontSize: "8px",
+                    letterSpacing: "0.1em",
+                  }}
+                >
+                  {num}
+                </span>
                 {label}
               </a>
             </li>

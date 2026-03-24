@@ -1,4 +1,4 @@
-/* Hero Section — 100svh, anchored bottom-left content, symbolic SVG top-right */
+/* Hero Section — OS window aesthetic, provocative framing */
 
 export default function Hero() {
   return (
@@ -12,222 +12,115 @@ export default function Hero() {
         minHeight: "600px",
         backgroundColor: "var(--color-ground)",
         overflow: "hidden",
+        border: "1px solid var(--color-void)",
+        margin: "0",
       }}
     >
-      {/* ── Window Chrome — top bar ──────────────────────────────────────── */}
+      {/* ── Window Title Bar ─────────────────────────────────────────────── */}
       <div
-        aria-hidden="true"
         style={{
           position: "absolute",
           top: 0,
           left: 0,
           right: 0,
-          height: "40px",
+          height: "44px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           paddingLeft: "var(--page-margin)",
           paddingRight: "var(--page-margin)",
-          borderBottom: "1px solid var(--border-subtle)",
+          borderBottom: "1px solid var(--color-void)",
+          backgroundColor: "var(--color-ground)",
+          zIndex: 2,
         }}
       >
-        {/* Three dots */}
-        <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: "7px", alignItems: "center" }}>
           {(["#C41E1E", "#D4C17A", "#9A9A9A"] as const).map((color, i) => (
             <div
               key={i}
               style={{
-                width: 7,
-                height: 7,
+                width: 10,
+                height: 10,
                 borderRadius: "50%",
                 backgroundColor: color,
-                opacity: 0.6,
               }}
             />
           ))}
         </div>
-        {/* Window title */}
+
         <p
           style={{
             fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-            fontSize: "9px",
+            fontSize: "10px",
             fontWeight: 500,
-            letterSpacing: "0.2em",
+            letterSpacing: "0.22em",
             textTransform: "uppercase",
-            color: "var(--color-ash)",
+            color: "var(--color-void)",
           }}
         >
-          ANSEO.WORLD — CREATIVE DIRECTION
+          ANSEO.WORLD — CREATIVE DIRECTION — 2025
         </p>
-        {/* Version */}
+
         <p
           style={{
             fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-            fontSize: "9px",
-            letterSpacing: "0.12em",
+            fontSize: "10px",
+            letterSpacing: "0.1em",
             color: "var(--color-ash)",
           }}
         >
-          v.2025
+          [ OPEN ]
         </p>
       </div>
 
-      {/* ── Symbolic Object — Minimalist Flower (upper-right) ──────────────── */}
+      {/* ── Symbolic Object ───────────────────────────────────────────────── */}
       <div
-        className="reveal-image"
         aria-hidden="true"
         style={{
           position: "absolute",
-          top: "5%",
+          top: "10%",
           right: "var(--page-margin)",
-          width: "clamp(200px, 40vw, 560px)",
-          opacity: 0.15,
+          width: "clamp(180px, 35vw, 480px)",
+          opacity: 0.1,
           pointerEvents: "none",
-          userSelect: "none",
         }}
       >
-        <svg
-          viewBox="0 0 400 520"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          style={{ width: "100%", height: "auto" }}
-          aria-hidden="true"
-        >
-          {/* Stem */}
-          <line
-            x1="200"
-            y1="220"
-            x2="200"
-            y2="510"
-            stroke="var(--color-void)"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-          {/* Center circle */}
-          <circle
-            cx="200"
-            cy="160"
-            r="58"
-            stroke="var(--color-void)"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          {/* Outer thin ring */}
-          <circle
-            cx="200"
-            cy="160"
-            r="88"
-            stroke="var(--color-void)"
-            strokeWidth="0.75"
-            strokeDasharray="4 8"
-            fill="none"
-          />
-          {/* Petal top */}
-          <ellipse
-            cx="200"
-            cy="88"
-            rx="18"
-            ry="38"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
-          {/* Petal bottom */}
-          <ellipse
-            cx="200"
-            cy="232"
-            rx="18"
-            ry="38"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
-          {/* Petal left */}
-          <ellipse
-            cx="128"
-            cy="160"
-            rx="38"
-            ry="18"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
-          {/* Petal right */}
-          <ellipse
-            cx="272"
-            cy="160"
-            rx="38"
-            ry="18"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
-          {/* Diagonal petal top-left */}
-          <ellipse
-            cx="147"
-            cy="107"
-            rx="18"
-            ry="38"
-            transform="rotate(-45 147 107)"
-            stroke="var(--color-void)"
-            strokeWidth="0.75"
-            fill="none"
-          />
-          {/* Diagonal petal top-right */}
-          <ellipse
-            cx="253"
-            cy="107"
-            rx="18"
-            ry="38"
-            transform="rotate(45 253 107)"
-            stroke="var(--color-void)"
-            strokeWidth="0.75"
-            fill="none"
-          />
-          {/* Diagonal petal bottom-left */}
-          <ellipse
-            cx="147"
-            cy="213"
-            rx="18"
-            ry="38"
-            transform="rotate(45 147 213)"
-            stroke="var(--color-void)"
-            strokeWidth="0.75"
-            fill="none"
-          />
-          {/* Diagonal petal bottom-right */}
-          <ellipse
-            cx="253"
-            cy="213"
-            rx="18"
-            ry="38"
-            transform="rotate(-45 253 213)"
-            stroke="var(--color-void)"
-            strokeWidth="0.75"
-            fill="none"
-          />
-          {/* Inner dot */}
-          <circle
-            cx="200"
-            cy="160"
-            r="5"
-            fill="var(--color-void)"
-          />
-          {/* Leaf left */}
-          <path
-            d="M200 360 Q160 330 168 380 Q185 395 200 360Z"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
-          {/* Leaf right */}
-          <path
-            d="M200 400 Q240 370 232 420 Q215 435 200 400Z"
-            stroke="var(--color-void)"
-            strokeWidth="1"
-            fill="none"
-          />
+        <svg viewBox="0 0 400 520" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: "100%", height: "auto" }}>
+          <line x1="200" y1="220" x2="200" y2="510" stroke="var(--color-void)" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="200" cy="160" r="58" stroke="var(--color-void)" strokeWidth="1.5" fill="none" />
+          <circle cx="200" cy="160" r="88" stroke="var(--color-void)" strokeWidth="0.75" strokeDasharray="4 8" fill="none" />
+          <ellipse cx="200" cy="88" rx="18" ry="38" stroke="var(--color-void)" strokeWidth="1" fill="none" />
+          <ellipse cx="200" cy="232" rx="18" ry="38" stroke="var(--color-void)" strokeWidth="1" fill="none" />
+          <ellipse cx="128" cy="160" rx="38" ry="18" stroke="var(--color-void)" strokeWidth="1" fill="none" />
+          <ellipse cx="272" cy="160" rx="38" ry="18" stroke="var(--color-void)" strokeWidth="1" fill="none" />
+          <ellipse cx="147" cy="107" rx="18" ry="38" transform="rotate(-45 147 107)" stroke="var(--color-void)" strokeWidth="0.75" fill="none" />
+          <ellipse cx="253" cy="107" rx="18" ry="38" transform="rotate(45 253 107)" stroke="var(--color-void)" strokeWidth="0.75" fill="none" />
+          <ellipse cx="147" cy="213" rx="18" ry="38" transform="rotate(45 147 213)" stroke="var(--color-void)" strokeWidth="0.75" fill="none" />
+          <ellipse cx="253" cy="213" rx="18" ry="38" transform="rotate(-45 253 213)" stroke="var(--color-void)" strokeWidth="0.75" fill="none" />
+          <circle cx="200" cy="160" r="5" fill="var(--color-void)" />
+          <path d="M200 360 Q160 330 168 380 Q185 395 200 360Z" stroke="var(--color-void)" strokeWidth="1" fill="none" />
+          <path d="M200 400 Q240 370 232 420 Q215 435 200 400Z" stroke="var(--color-void)" strokeWidth="1" fill="none" />
         </svg>
+      </div>
+
+      {/* ── Large decorative quotation mark ──────────────────────────────── */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          top: "44px",
+          left: "var(--page-margin)",
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontSize: "clamp(120px, 18vw, 260px)",
+          fontWeight: 300,
+          lineHeight: 1,
+          color: "var(--color-rupture)",
+          opacity: 0.12,
+          userSelect: "none",
+          pointerEvents: "none",
+        }}
+      >
+        &#8220;
       </div>
 
       {/* ── Text Block — bottom-left ──────────────────────────────────────── */}
@@ -236,20 +129,19 @@ export default function Hero() {
           position: "absolute",
           bottom: "10%",
           left: "var(--page-margin)",
-          maxWidth: "min(680px, 90vw)",
+          maxWidth: "min(740px, 90vw)",
           display: "flex",
           flexDirection: "column",
-          gap: "20px",
+          gap: "24px",
         }}
       >
-        {/* Label */}
         <p
           className="reveal-label"
           style={{
-            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif, 'Helvetica Neue', sans-serif",
-            fontSize: "11px",
+            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+            fontSize: "10px",
             fontWeight: 500,
-            letterSpacing: "0.18em",
+            letterSpacing: "0.22em",
             textTransform: "uppercase",
             color: "var(--color-ash)",
           }}
@@ -257,39 +149,55 @@ export default function Hero() {
           Creative Direction — Visual Concept
         </p>
 
-        {/* Main Statement */}
         <h1
           className="reveal"
           style={{
-            fontFamily: "'Cormorant Garamond', Georgia, serif, Georgia, serif",
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: "clamp(48px, 8vw, 120px)",
             fontWeight: 300,
-            lineHeight: 1.05,
+            lineHeight: 1.0,
             color: "var(--color-void)",
-            whiteSpace: "pre-line",
-            letterSpacing: "-0.01em",
+            letterSpacing: "-0.02em",
           }}
         >
-          {"The work of\nstaying human."}
+          &ldquo;The work of<br />staying human.&rdquo;
         </h1>
 
-        {/* Scroll hint */}
-        <p
+        {/* Bottom meta row */}
+        <div
           className="reveal"
           style={{
-            fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif, 'Helvetica Neue', sans-serif",
-            fontSize: "11px",
-            fontWeight: 400,
-            letterSpacing: "0.08em",
-            color: "var(--color-ash)",
-            transitionDelay: "80ms",
+            display: "flex",
+            alignItems: "center",
+            gap: "32px",
+            transitionDelay: "120ms",
           }}
         >
-          Scroll to enter →
-        </p>
+          <p
+            style={{
+              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize: "10px",
+              letterSpacing: "0.12em",
+              color: "var(--color-ash)",
+            }}
+          >
+            Scroll to enter →
+          </p>
+          <div style={{ height: "1px", flex: 1, backgroundColor: "var(--border-subtle)" }} />
+          <p
+            style={{
+              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize: "10px",
+              letterSpacing: "0.12em",
+              color: "var(--color-ash)",
+            }}
+          >
+            Seoul, KR
+          </p>
+        </div>
       </div>
 
-      {/* ── Bottom rule ──────────────────────────────────────────────────── */}
+      {/* ── Bottom status bar ─────────────────────────────────────────────── */}
       <div
         aria-hidden="true"
         style={{
@@ -297,10 +205,22 @@ export default function Hero() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: "1px",
-          backgroundColor: "var(--border-subtle)",
+          height: "32px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          paddingLeft: "var(--page-margin)",
+          paddingRight: "var(--page-margin)",
+          borderTop: "1px solid var(--color-void)",
         }}
-      />
+      >
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "9px", letterSpacing: "0.18em", color: "var(--color-ash)", textTransform: "uppercase" }}>
+          SECTION 00 — INTRO
+        </p>
+        <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "9px", letterSpacing: "0.12em", color: "var(--color-ash)" }}>
+          ● READY
+        </p>
+      </div>
     </section>
   );
 }
