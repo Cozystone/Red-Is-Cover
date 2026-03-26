@@ -7,8 +7,8 @@
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
-const STIR_GOAL = 6.0
-const AUTO_MS   = 9000
+const STIR_GOAL = 14.0
+const AUTO_MS   = 18000
 
 interface Props { onComplete: () => void }
 
@@ -34,7 +34,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
         if (!canvas) return;
         const app = LiquidBackground(canvas);
         app.liquidPlane.material.transparent = true;
-        app.liquidPlane.material.opacity     = 0.55;
+        app.liquidPlane.material.opacity     = 0.28;
         app.liquidPlane.material.metalness   = 0.95;
         app.liquidPlane.material.roughness   = 0.05;
         app.liquidPlane.uniforms.displacementScale.value = 5;
