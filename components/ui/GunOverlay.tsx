@@ -20,6 +20,15 @@ function makeRng(seed: number) {
 
 const CRACK_SEED = 0x9E3779B9
 
+// createRadialGradient throws if r0 or r1 < 0; guard all calls here
+function radialGrad(
+  ctx: CanvasRenderingContext2D,
+  x0: number, y0: number, r0: number,
+  x1: number, y1: number, r1: number,
+) {
+  return ctx.createRadialGradient(x0, y0, Math.max(0.01, r0), x1, y1, Math.max(0.01, r1))
+}
+
 // ── Ring distances from bullet centre (px) ────────────────────────────────────
 // Used for both glass-pane cell geometry and concentric ring arcs.
 const RINGS = [46, 96, 160, 248, 385, 600]
@@ -243,8 +252,8 @@ function runShatter(
         ctx.fillRect(pt.x - pt.size / 2, pt.y - pt.size / 2, pt.size, pt.size)
       }
 
-      const gr  = 130 * p
-      const grd = ctx.createRadialGradient(ox, oy, 0, ox, oy, gr)
+      const gr  = Math.max(0.01, 130 * p)
+      const grd = radialGrad(ctx,ox, oy, 0, ox, oy, gr)
       grd.addColorStop(0,   `rgba(255,110,0,${p})`);   grd.addColorStop(0.3, `rgba(190,18,0,${0.55*p})`)
       grd.addColorStop(0.7, `rgba(110,0,0,${0.18*p})`); grd.addColorStop(1, 'transparent')
       ctx.fillStyle = grd; ctx.beginPath(); ctx.arc(ox, oy, gr, 0, Math.PI * 2); ctx.fill()
@@ -273,7 +282,7 @@ function runShatter(
       // ── Phase 3: glass panes visible, red bleed ────────────────────────
       const p = (t - 0.72) / 0.28
 
-      const rv = ctx.createRadialGradient(ox, oy, 0, ox, oy, diag * 0.82)
+      const rv = radialGrad(ctx,ox, oy, 0, ox, oy, diag * 0.82)
       rv.addColorStop(0,   `rgba(75,0,5,${p * 0.45})`);   rv.addColorStop(0.4, `rgba(55,0,3,${p * 0.62})`)
       rv.addColorStop(1,   `rgba(8,0,0,${p * 0.90})`)
       ctx.fillStyle = rv; ctx.fillRect(0, 0, w, h)
@@ -327,7 +336,7 @@ function drawBulletHole(
 
   // ── 1. Localised dark vignette (not full-screen — outer areas stay transparent
   //    so the red Landing shows clearly through the glass pane sections) ────────
-  const vgrd = ctx.createRadialGradient(ox, oy, 28, ox, oy, diag * 0.58)
+  const vgrd = radialGrad(ctx,ox, oy, 28, ox, oy, diag * 0.58)
   vgrd.addColorStop(0,    'rgba(0,0,0,0.72)')
   vgrd.addColorStop(0.18, 'rgba(0,0,0,0.50)')
   vgrd.addColorStop(0.48, 'rgba(0,0,0,0.20)')
@@ -373,7 +382,7 @@ function drawBulletHole(
   }
 
   // ── 5. Crushed glass zone (dense dark mass near hole, 3D depth illusion) ─────
-  const crush = ctx.createRadialGradient(ox, oy, HOLE_R, ox, oy, 68)
+  const crush = radialGrad(ctx,ox, oy, HOLE_R, ox, oy, 68)
   crush.addColorStop(0,   'rgba(18,16,22,0.95)')
   crush.addColorStop(0.5, 'rgba(8,6,12,0.72)')
   crush.addColorStop(1,   'rgba(0,0,0,0.0)')
@@ -397,7 +406,7 @@ function drawBulletHole(
   }
 
   // ── 7. Blood / burn seep at centre ───────────────────────────────────────────
-  const blood = ctx.createRadialGradient(ox, oy, HOLE_R, ox, oy, 92)
+  const blood = radialGrad(ctx,ox, oy, HOLE_R, ox, oy, 92)
   blood.addColorStop(0,   'rgba(110,0,8,0.62)')
   blood.addColorStop(0.4, 'rgba(65,0,4,0.28)')
   blood.addColorStop(1,   'transparent')
@@ -409,7 +418,7 @@ function drawBulletHole(
   ctx.fillStyle = '#000'; ctx.fill(); ctx.restore()
 
   // ── 9. Scorched rim ──────────────────────────────────────────────────────────
-  const rim = ctx.createRadialGradient(ox, oy, HOLE_R - 3, ox, oy, HOLE_R + 24)
+  const rim = radialGrad(ctx,ox, oy, HOLE_R - 3, ox, oy, HOLE_R + 24)
   rim.addColorStop(0,    'rgba(215,95,0,0.95)'); rim.addColorStop(0.28, 'rgba(145,32,0,0.78)')
   rim.addColorStop(0.60, 'rgba(55,7,0,0.40)');  rim.addColorStop(1,    'transparent')
   ctx.fillStyle = rim; ctx.beginPath(); ctx.arc(ox, oy, HOLE_R + 24, 0, Math.PI * 2); ctx.fill()

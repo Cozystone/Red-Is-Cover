@@ -64,9 +64,12 @@ const FRAG = /* glsl */`
 
     float waveAmp = abs(h);
     vec3  color   = vec3(0.78, 0.90, 1.00) * spec
-                  + vec3(0.40, 0.65, 1.00) * waveAmp * 0.10;
+                  + vec3(0.40, 0.65, 1.00) * waveAmp * 0.10
+                  + vec3(0.03, 0.06, 0.14);  // dark blue ambient tint
 
-    gl_FragColor = vec4(color, 1.0);
+    // Semi-transparent: underlying scene shows through, liquid builds with waves
+    float alpha = 0.55 + waveAmp * 0.22 + spec * 0.23;
+    gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.90));
   }
 `
 
@@ -256,13 +259,12 @@ export default function LiquidOverlay({ onComplete }: Props) {
         inset:      0,
         zIndex:     9000,
         cursor:     'crosshair',
-        background: '#050505',
       }}
     >
       <Canvas
         orthographic
         camera={{ near: -1, far: 1, zoom: 1 }}
-        gl={{ antialias: false, alpha: false }}
+        gl={{ antialias: false, alpha: true }}
         style={{ display: 'block', width: '100%', height: '100%' }}
       >
         <LiquidMesh onComplete={onComplete} disturbRef={disturbRef} />
