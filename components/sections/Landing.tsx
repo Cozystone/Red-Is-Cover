@@ -3,14 +3,24 @@
 
 'use client'
 
-import { useDeferredValue } from 'react'
+import { useDeferredValue, useState, useCallback } from 'react'
 import GrassField from '@/components/ui/GrassField'
 import GolmokSign from '@/components/ui/GolmokSign'
 import { useGun } from '@/lib/gunContext'
 
+type GolmokPhase = 'idle' | 'clearing' | 'liquid' | 'transitioning' | 'whiteroom'
+
 export default function Landing() {
   const { curtainOpen } = useGun()
   const deferredCurtainOpen = useDeferredValue(curtainOpen)
+  const [golmokPhase, setGolmokPhase] = useState<GolmokPhase>('idle')
+
+  const handlePhaseChange = useCallback((newPhase: GolmokPhase) => {
+    setGolmokPhase(newPhase)
+    if (newPhase === 'transitioning') {
+      setTimeout(() => setGolmokPhase('whiteroom'), 500)
+    }
+  }, [])
   return (
     <section
       id="landing"
@@ -242,11 +252,11 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── Grass field — deferred so WebGL init doesn't block curtain click INP ── */}
-      {deferredCurtainOpen && <GrassField />}
+      {/* ── Grass field — visible during idle AND liquid (liquid overlays on top of grass) ── */}
+      {deferredCurtainOpen && (golmokPhase === 'idle' || golmokPhase === 'liquid') && <GrassField />}
 
       {/* ── 골목길 sign — right building wall (easter egg) ─────────────────── */}
-      <GolmokSign />
+      <GolmokSign phase={golmokPhase} onPhaseChange={handlePhaseChange} />
 
       {/* ── Bottom status bar ─────────────────────────────────────────────── */}
       <div
