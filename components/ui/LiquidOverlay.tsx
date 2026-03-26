@@ -82,8 +82,8 @@ const FRAG = /* glsl */`
     f = f * 0.5 + 0.5;   /* remap -1..1 → 0..1 */
 
     /* ── Dark red / crimson colour ramp ─────────────────────────────────── */
-    vec3 c0 = vec3(0.03, 0.01, 0.01);   /* near black                  */
-    vec3 c1 = vec3(0.30, 0.02, 0.04);   /* deep crimson                */
+    vec3 c0 = vec3(0.12, 0.02, 0.02);   /* dark red base (never pure black) */
+    vec3 c1 = vec3(0.38, 0.03, 0.05);   /* deep crimson                */
     vec3 c2 = vec3(0.75, 0.04, 0.08);   /* vivid red                   */
     vec3 c3 = vec3(0.95, 0.28, 0.06);   /* orange-red                  */
     vec3 c4 = vec3(1.00, 0.90, 0.80);   /* cream highlight at peaks    */
@@ -215,6 +215,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
         gl={{ antialias: true, alpha: false }}
         style={{ display: 'block', width: '100%', height: '100%' }}
         tabIndex={-1}
+        onCreated={({ gl }) => gl.setClearColor('#1a0303')}
       >
         <LiquidMesh onComplete={onComplete} stirRef={stirRef} />
       </Canvas>
