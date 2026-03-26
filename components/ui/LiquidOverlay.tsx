@@ -29,19 +29,21 @@ export default function LiquidOverlay({ onComplete }: Props) {
     script.id    = '__liquid_script__'
     script.textContent = `
       import LiquidBackground from '/liquid1.min.js';
-      const canvas = document.getElementById('__liquid_canvas__');
-      if (!canvas) { console.warn('liquid canvas not found'); return; }
-      const app = LiquidBackground(canvas);
-      app.liquidPlane.material.transparent = true;
-      app.liquidPlane.material.opacity     = 0.55;
-      app.liquidPlane.material.metalness   = 0.95;
-      app.liquidPlane.material.roughness   = 0.05;
-      app.liquidPlane.uniforms.displacementScale.value = 5;
-      app.setRain(false);
-      if (app.three?.renderer) {
-        app.three.renderer.setClearColor(0x000000, 0);
-      }
-      window.__liquidApp__ = app;
+      (function() {
+        const canvas = document.getElementById('__liquid_canvas__');
+        if (!canvas) return;
+        const app = LiquidBackground(canvas);
+        app.liquidPlane.material.transparent = true;
+        app.liquidPlane.material.opacity     = 0.55;
+        app.liquidPlane.material.metalness   = 0.95;
+        app.liquidPlane.material.roughness   = 0.05;
+        app.liquidPlane.uniforms.displacementScale.value = 5;
+        app.setRain(false);
+        if (app.three && app.three.renderer) {
+          app.three.renderer.setClearColor(0x000000, 0);
+        }
+        window.__liquidApp__ = app;
+      })();
     `
     document.head.appendChild(script)
 
