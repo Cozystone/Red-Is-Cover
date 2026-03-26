@@ -24,7 +24,11 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
   // Only show click target when Landing is actually visible
   const isRevealed = gunState === 'revealed'
 
-  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    setMounted(true)
+    // Preload WhiteRoomScene so it renders instantly when phase becomes 'whiteroom'
+    import('@/components/ui/WhiteRoomScene')
+  }, [])
 
   const handleClick = () => {
     if (phase !== 'idle') return
@@ -90,6 +94,12 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
       {/* ── Liquid overlay ───────────────────────────────────────────────────── */}
       {phase === 'liquid' && (
         <LiquidOverlay onComplete={() => setPhase('transitioning')} />
+      )}
+
+      {/* ── White cover — prevents flash of Landing between liquid and whiteroom ─ */}
+      {mounted && phase === 'whiteroom' && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: '#f8f8f6', zIndex: 9000 }} />,
+        document.body
       )}
 
       {/* ── White room ───────────────────────────────────────────────────────── */}

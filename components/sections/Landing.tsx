@@ -251,8 +251,7 @@ export default function Landing() {
       </div>
 
       {/* ── Grass field — visible during idle AND liquid (liquid overlays on top of grass) ── */}
-      {/* GrassField only during idle — unmount during liquid so liquid1 gets the WebGL context */}
-      {deferredCurtainOpen && golmokPhase === 'idle' && <GrassField />}
+      {deferredCurtainOpen && (golmokPhase === 'idle' || golmokPhase === 'liquid') && <GrassField />}
 
       {/* ── 골목길 sign — right building wall (easter egg) ─────────────────── */}
       <GolmokSign phase={golmokPhase} onPhaseChange={handlePhaseChange} />

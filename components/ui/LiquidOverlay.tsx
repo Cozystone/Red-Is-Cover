@@ -40,10 +40,15 @@ export default function LiquidOverlay({ onComplete }: Props) {
         const canvas = document.getElementById('__liquid_canvas__');
         if (!canvas) return;
         const app = LiquidBackground(canvas);
-        app.liquidPlane.material.metalness = 0.75;
-        app.liquidPlane.material.roughness = 0.25;
+        app.liquidPlane.material.transparent = true;
+        app.liquidPlane.material.opacity     = 0.9;
+        app.liquidPlane.material.metalness   = 0.75;
+        app.liquidPlane.material.roughness   = 0.25;
         app.liquidPlane.uniforms.displacementScale.value = 5;
         app.setRain(false);
+        if (app.three && app.three.renderer) {
+          app.three.renderer.setClearColor(0x000000, 0);
+        }
         window.__liquidApp__ = app;
       })();
     `
@@ -97,7 +102,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
     >
       <canvas
         id="__liquid_canvas__"
-        style={{ display: 'block', width: '100%', height: '100%' }}
+        style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
       />
 
       {fading && (
