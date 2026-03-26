@@ -1,27 +1,20 @@
 'use client'
 
-/* LiquidOverlay — fullscreen 3-D metallic liquid surface.
-   Wave simulation runs on CPU; result is uploaded each frame as a DataTexture.
-   A fullscreen quad + custom GLSL renders normals + specular highlights so the
-   surface looks like dark liquid metal (similar to threejs-components liquid1).
-   onComplete fires when wave amplitude crosses the corner-detection threshold. */
+/* LiquidOverlay — fullscreen domain-warped liquid surface shader.
+   Organic, flowing folds of colour (dark crimson → red → cream highlights)
+   rendered entirely on GPU.  Mouse movement increases the warp intensity;
+   onComplete fires once the user has stirred enough OR after AUTO_MS. */
 
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Canvas, useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-// ── Simulation constants ──────────────────────────────────────────────────────
-const COLS  = 180
-const ROWS  = 120
-const DAMP  = 0.993
-const C2    = 0.46
-const MRAD  = 10
-const AMP   = 3.5
-const CTHR  = 0.18   // corner amplitude threshold
-const CSIZ  = 12     // corner region size
+// How much total cursor movement (normalised) triggers completion
+const STIR_GOAL  = 6.0
+const AUTO_MS    = 9000   // fallback: auto-complete after 9 s
 
-// ── GLSL shaders ─────────────────────────────────────────────────────────────
+// ── GLSL ─────────────────────────────────────────────────────────────────────
 
 const VERT = /* glsl */`
   varying vec2 vUv;
@@ -33,169 +26,132 @@ const VERT = /* glsl */`
 
 const FRAG = /* glsl */`
   precision highp float;
-  uniform sampler2D uWave;
-  uniform vec2      uRes;
-  uniform float     uTime;
-  varying vec2 vUv;
+  uniform float uTime;
+  uniform float uWarp;   // increases as user stirs (0 → 1)
+  varying vec2  vUv;
+
+  /* ── Gradient noise ─────────────────────────────────────────────────── */
+  vec2 hash2(vec2 p) {
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return -1.0 + 2.0 * fract(sin(p) * 43758.5453);
+  }
+
+  float gnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(
+      mix(dot(hash2(i + vec2(0,0)), f - vec2(0,0)),
+          dot(hash2(i + vec2(1,0)), f - vec2(1,0)), u.x),
+      mix(dot(hash2(i + vec2(0,1)), f - vec2(0,1)),
+          dot(hash2(i + vec2(1,1)), f - vec2(1,1)), u.x),
+      u.y
+    );
+  }
+
+  /* ── FBM (5 octaves) ─────────────────────────────────────────────────── */
+  float fbm(vec2 p) {
+    float v = 0.0, a = 0.52;
+    mat2  m = mat2(1.6, 1.2, -1.2, 1.6);
+    for (int i = 0; i < 5; i++) {
+      v += a * gnoise(p);
+      p  = m * p;
+      a *= 0.5;
+    }
+    return v;
+  }
 
   void main() {
-    vec2 px = 1.0 / uRes;
+    /* aspect-correct UV centred at 0 */
+    vec2 uv  = vUv * 2.0 - 1.0;
+    float t  = uTime * 0.20;
+    float w  = uWarp;               // 0 = calm, 1 = max stir
 
-    float hC = texture2D(uWave, vUv             ).r;
-    float hL = texture2D(uWave, vUv - vec2(px.x, 0.0)).r;
-    float hR = texture2D(uWave, vUv + vec2(px.x, 0.0)).r;
-    float hD = texture2D(uWave, vUv - vec2(0.0, px.y)).r;
-    float hU = texture2D(uWave, vUv + vec2(0.0, px.y)).r;
+    /* ── Domain warp (Inigo Quilez technique) ──────────────────────────── */
+    vec2 q = vec2(
+      fbm(uv * 1.2 + vec2(0.00, 0.00) + t * 0.7),
+      fbm(uv * 1.2 + vec2(5.20, 1.30) + t * 0.5)
+    );
 
-    float h = hC * 2.0 - 1.0;
+    vec2 r = vec2(
+      fbm(uv * 1.0 + 3.5*q + vec2(1.70, 9.20) + t * 0.30 + w * 1.2),
+      fbm(uv * 1.0 + 3.5*q + vec2(8.30, 2.80) + t * 0.26 + w * 0.9)
+    );
 
-    // Surface normal from finite differences
-    vec3 n = normalize(vec3((hL - hR) * 4.0, (hD - hU) * 4.0, 0.18));
+    float f = fbm(uv * 0.9 + 3.2*r + t * 0.12 + w * 0.6);
+    f = f * 0.5 + 0.5;   /* remap -1..1 → 0..1 */
 
-    vec3 l1 = normalize(vec3(-0.6,  0.8, 0.6));
-    vec3 l2 = normalize(vec3( 0.7,  0.6, 0.5));
-    vec3 l3 = normalize(vec3( 0.0, -0.5, 0.7));
-    vec3 viewDir = vec3(0.0, 0.0, 1.0);
+    /* ── Dark red / crimson colour ramp ─────────────────────────────────── */
+    vec3 c0 = vec3(0.03, 0.01, 0.01);   /* near black                  */
+    vec3 c1 = vec3(0.30, 0.02, 0.04);   /* deep crimson                */
+    vec3 c2 = vec3(0.75, 0.04, 0.08);   /* vivid red                   */
+    vec3 c3 = vec3(0.95, 0.28, 0.06);   /* orange-red                  */
+    vec3 c4 = vec3(1.00, 0.90, 0.80);   /* cream highlight at peaks    */
 
-    float spec1 = pow(max(dot(n, normalize(l1 + viewDir)), 0.0), 64.0);
-    float spec2 = pow(max(dot(n, normalize(l2 + viewDir)), 0.0), 48.0);
-    float spec3 = pow(max(dot(n, normalize(l3 + viewDir)), 0.0), 32.0);
-    float spec  = spec1 * 0.9 + spec2 * 0.6 + spec3 * 0.3;
+    vec3 col = mix(c0, c1, smoothstep(0.0, 0.4, f));
+    col = mix(col, c2, smoothstep(0.35, 0.60, f));
+    col = mix(col, c3, smoothstep(0.55, 0.78, f));
+    /* bright ridge highlights — sharpened with warp */
+    float peak = pow(max(f - 0.72 - w * 0.04, 0.0), 2.5 - w * 0.8);
+    col += c4 * peak * (5.0 + w * 4.0);
 
-    float waveAmp = abs(h);
-    vec3  color   = vec3(0.78, 0.90, 1.00) * spec
-                  + vec3(0.40, 0.65, 1.00) * waveAmp * 0.10
-                  + vec3(0.03, 0.06, 0.14);  // dark blue ambient tint
+    /* extra chromatic depth from q length */
+    col = mix(col, c0, clamp(length(q) * 0.35 - 0.15, 0.0, 0.45));
 
-    // Semi-transparent: underlying scene shows through, liquid builds with waves
-    float alpha = 0.55 + waveAmp * 0.22 + spec * 0.23;
-    gl_FragColor = vec4(color, clamp(alpha, 0.0, 0.90));
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
   }
 `
 
-// ── Wave simulation + Three.js mesh ──────────────────────────────────────────
+// ── Scene component ───────────────────────────────────────────────────────────
 
-type DisturbFn = (nx: number, ny: number, amp: number) => void
+type StirFn = (delta: number) => void
 
 interface LiquidMeshProps {
   onComplete: () => void
-  disturbRef: React.MutableRefObject<DisturbFn | null>
+  stirRef:    React.MutableRefObject<StirFn | null>
 }
 
-function LiquidMesh({ onComplete, disturbRef }: LiquidMeshProps) {
-  const { size } = useThree()
-  const meshRef  = useRef<THREE.Mesh>(null)
-  const matRef   = useRef<THREE.ShaderMaterial>(null)
+function LiquidMesh({ onComplete, stirRef }: LiquidMeshProps) {
+  const matRef      = useRef<THREE.ShaderMaterial>(null)
+  const stirTotal   = useRef(0)
+  const completed   = useRef(false)
 
-  // Wave buffers (CPU)
-  const N    = COLS * ROWS
-  const bufA = useRef(new Float32Array(N))
-  const bufB = useRef(new Float32Array(N))
-  const at   = (x: number, y: number) => y * COLS + x
-
-  // DataTexture (R channel = height)
-  const texData = useRef(new Uint8Array(COLS * ROWS * 4).fill(0))
-  const texture = useRef<THREE.DataTexture>((() => {
-    const t = new THREE.DataTexture(texData.current, COLS, ROWS, THREE.RGBAFormat)
-    t.magFilter = THREE.LinearFilter
-    t.minFilter = THREE.LinearFilter
-    t.needsUpdate = true
-    return t
-  })())
-
-  // Corner tracking
-  const reached  = useRef([false, false, false, false])
-  const complete = useRef(false)
-
-  // Disturbance helper (normalised coords → grid)
-  const disturb = (nx: number, ny: number, amp: number) => {
-    const gx = Math.round(nx * (COLS - 1))
-    const gy = Math.round((1 - ny) * (ROWS - 1))   // flip Y (WebGL)
-    for (let dy = -MRAD; dy <= MRAD; dy++) {
-      for (let dx = -MRAD; dx <= MRAD; dx++) {
-        const px = gx + dx, py = gy + dy
-        if (px < 1 || px >= COLS - 1 || py < 1 || py >= ROWS - 1) continue
-        const d = Math.hypot(dx, dy)
-        if (d > MRAD) continue
-        bufA.current[at(px, py)] += amp * (1 - d / MRAD) ** 2
-      }
-    }
-  }
-
-  // Expose disturb to parent via ref — avoids the timing bug where
-  // a canvasRef-based useEffect ran before Canvas onCreated fired.
   useEffect(() => {
-    disturbRef.current = disturb
-    return () => { disturbRef.current = null }
+    stirRef.current = (delta: number) => {
+      stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
+    }
+
+    // Fallback: auto-complete after AUTO_MS
+    const timer = setTimeout(() => {
+      if (!completed.current) { completed.current = true; onComplete() }
+    }, AUTO_MS)
+
+    return () => { clearTimeout(timer); stirRef.current = null }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Per-frame: wave step → texture update → corner check
   useFrame(({ clock }) => {
-    const a = bufA.current, b = bufB.current
-    // Wave step
-    for (let y = 1; y < ROWS - 1; y++) {
-      for (let x = 1; x < COLS - 1; x++) {
-        const i   = at(x, y)
-        const lap = a[at(x-1,y)] + a[at(x+1,y)] + a[at(x,y-1)] + a[at(x,y+1)] - 4 * a[i]
-        b[i] = (2 * a[i] - b[i] + C2 * lap) * DAMP
-      }
-    }
-    bufA.current = b; bufB.current = a   // swap
+    if (!matRef.current) return
+    const mat = matRef.current
+    mat.uniforms.uTime.value = clock.elapsedTime
+    mat.uniforms.uWarp.value = stirTotal.current / STIR_GOAL
 
-    // Upload to texture
-    const td = texData.current
-    const cur = bufA.current
-    for (let i = 0; i < N; i++) {
-      const v = ((cur[i] + 1.5) / 3 * 255 + 0.5) | 0
-      const pi = i << 2
-      td[pi] = td[pi+1] = td[pi+2] = Math.max(0, Math.min(255, v))
-      td[pi+3] = 255
-    }
-    texture.current.needsUpdate = true
-
-    // Update uniforms
-    if (matRef.current) {
-      matRef.current.uniforms.uTime.value = clock.elapsedTime
-      matRef.current.uniforms.uRes.value.set(size.width, size.height)
-    }
-
-    // Corner detection
-    if (!complete.current) {
-      const r = reached.current
-      const corners: [number, number][] = [
-        [0,           0          ],
-        [COLS - CSIZ, 0          ],
-        [0,           ROWS - CSIZ],
-        [COLS - CSIZ, ROWS - CSIZ],
-      ]
-      corners.forEach(([cx, cy], i) => {
-        if (r[i]) return
-        outer:
-        for (let dy = 0; dy < CSIZ; dy++)
-          for (let dx = 0; dx < CSIZ; dx++)
-            if (Math.abs(cur[at(cx+dx, cy+dy)]) > CTHR) {
-              r[i] = true; break outer
-            }
-      })
-      if (r.every(Boolean)) {
-        complete.current = true
-        onComplete()
-      }
+    if (!completed.current && stirTotal.current >= STIR_GOAL) {
+      completed.current = true
+      onComplete()
     }
   })
 
   return (
-    <mesh ref={meshRef}>
+    <mesh>
       <planeGeometry args={[2, 2]} />
       <shaderMaterial
         ref={matRef}
         vertexShader={VERT}
         fragmentShader={FRAG}
         uniforms={{
-          uWave: { value: texture.current },
-          uRes:  { value: new THREE.Vector2(size.width, size.height) },
           uTime: { value: 0 },
+          uWarp: { value: 0 },
         }}
         depthTest={false}
         depthWrite={false}
@@ -206,33 +162,27 @@ function LiquidMesh({ onComplete, disturbRef }: LiquidMeshProps) {
 
 // ── Exported component ────────────────────────────────────────────────────────
 
-interface Props {
-  onComplete: () => void
-}
+interface Props { onComplete: () => void }
 
 export default function LiquidOverlay({ onComplete }: Props) {
-  const disturbRef = useRef<DisturbFn | null>(null)
-  const lastPos    = useRef({ x: -1, y: -1 })
-  const divRef     = useRef<HTMLDivElement>(null)
+  const stirRef  = useRef<StirFn | null>(null)
+  const lastPos  = useRef({ x: -1, y: -1 })
+  const divRef   = useRef<HTMLDivElement>(null)
 
-  // Preload heavy GLBs while user stirs
   useEffect(() => {
     fetch('/box_white.glb').catch(() => {})
     fetch('/vintage_telephone.glb').catch(() => {})
   }, [])
 
-  // Touch listener needs passive:false for preventDefault
+  // Touch (passive:false to preventDefault)
   useEffect(() => {
     const div = divRef.current
     if (!div) return
     const onTouch = (e: TouchEvent) => {
       e.preventDefault()
       for (const t of Array.from(e.touches)) {
-        disturbRef.current?.(
-          t.clientX / window.innerWidth,
-          t.clientY / window.innerHeight,
-          AMP * 0.65,
-        )
+        stirRef.current?.(0.08)
+        lastPos.current = { x: t.clientX / window.innerWidth, y: t.clientY / window.innerHeight }
       }
     }
     div.addEventListener('touchmove', onTouch, { passive: false })
@@ -243,9 +193,8 @@ export default function LiquidOverlay({ onComplete }: Props) {
     const nx = e.clientX / window.innerWidth
     const ny = e.clientY / window.innerHeight
     if (lastPos.current.x >= 0) {
-      const speed = Math.hypot(nx - lastPos.current.x, ny - lastPos.current.y)
-      if (speed > 0.002)
-        disturbRef.current?.(nx, ny, Math.min(speed * 22, AMP))
+      const delta = Math.hypot(nx - lastPos.current.x, ny - lastPos.current.y)
+      if (delta > 0.002) stirRef.current?.(delta * 3.5)
     }
     lastPos.current = { x: nx, y: ny }
   }
@@ -254,20 +203,15 @@ export default function LiquidOverlay({ onComplete }: Props) {
     <div
       ref={divRef}
       onPointerMove={handlePointerMove}
-      style={{
-        position:   'fixed',
-        inset:      0,
-        zIndex:     9000,
-        cursor:     'crosshair',
-      }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9000, cursor: 'crosshair' }}
     >
       <Canvas
         orthographic
         camera={{ near: -1, far: 1, zoom: 1 }}
-        gl={{ antialias: false, alpha: true }}
+        gl={{ antialias: true, alpha: false }}
         style={{ display: 'block', width: '100%', height: '100%' }}
       >
-        <LiquidMesh onComplete={onComplete} disturbRef={disturbRef} />
+        <LiquidMesh onComplete={onComplete} stirRef={stirRef} />
       </Canvas>
 
       <div
@@ -282,19 +226,19 @@ export default function LiquidOverlay({ onComplete }: Props) {
           fontWeight:    500,
           letterSpacing: '0.30em',
           textTransform: 'uppercase',
-          color:         'rgba(255,255,255,0.5)',
+          color:         'rgba(255,255,255,0.45)',
           whiteSpace:    'nowrap',
           pointerEvents: 'none',
           animation:     'liqHint 2.8s ease-in-out infinite',
         }}
       >
-        Stir the liquid
+        Stir to enter
       </div>
 
       <style>{`
         @keyframes liqHint {
-          0%, 100% { opacity: 0.3; }
-          50%       { opacity: 1;   }
+          0%, 100% { opacity: 0.25; }
+          50%       { opacity: 0.9;  }
         }
       `}</style>
     </div>,
