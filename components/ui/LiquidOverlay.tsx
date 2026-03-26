@@ -172,6 +172,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
   useEffect(() => {
     fetch('/box_white.glb').catch(() => {})
     fetch('/vintage_telephone.glb').catch(() => {})
+    // Lock body scroll while overlay is mounted; restore on unmount
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
   }, [])
 
   // Touch (passive:false to preventDefault)
@@ -210,6 +214,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
         camera={{ near: -1, far: 1, zoom: 1 }}
         gl={{ antialias: true, alpha: false }}
         style={{ display: 'block', width: '100%', height: '100%' }}
+        tabIndex={-1}
       >
         <LiquidMesh onComplete={onComplete} stirRef={stirRef} />
       </Canvas>
