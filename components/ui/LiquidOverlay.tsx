@@ -81,24 +81,22 @@ const FRAG = /* glsl */`
     float f = fbm(uv * 0.9 + 3.2*r + t * 0.12 + w * 0.6);
     f = f * 0.5 + 0.5;   /* remap -1..1 → 0..1 */
 
-    /* ── Dark red / crimson colour ramp ─────────────────────────────────── */
-    vec3 c0 = vec3(0.12, 0.02, 0.02);   /* dark red base (never pure black) */
-    vec3 c1 = vec3(0.38, 0.03, 0.05);   /* deep crimson                */
-    vec3 c2 = vec3(0.75, 0.04, 0.08);   /* vivid red                   */
-    vec3 c3 = vec3(0.95, 0.28, 0.06);   /* orange-red                  */
+    /* ── Colour ramp ────────────────────────────────────────────────────── */
+    vec3 c1 = vec3(0.55, 0.03, 0.06);   /* deep crimson                */
+    vec3 c2 = vec3(0.80, 0.05, 0.09);   /* vivid red                   */
+    vec3 c3 = vec3(0.97, 0.30, 0.07);   /* orange-red                  */
     vec3 c4 = vec3(1.00, 0.90, 0.80);   /* cream highlight at peaks    */
 
-    vec3 col = mix(c0, c1, smoothstep(0.0, 0.4, f));
+    vec3 col = c1;
     col = mix(col, c2, smoothstep(0.35, 0.60, f));
     col = mix(col, c3, smoothstep(0.55, 0.78, f));
-    /* bright ridge highlights — sharpened with warp */
     float peak = pow(max(f - 0.72 - w * 0.04, 0.0), 2.5 - w * 0.8);
     col += c4 * peak * (5.0 + w * 4.0);
 
-    /* extra chromatic depth from q length */
-    col = mix(col, c0, clamp(length(q) * 0.35 - 0.15, 0.0, 0.45));
+    /* alpha: transparent at low f, opaque at peaks — grass shows through */
+    float a = smoothstep(0.25, 0.75, f) * (0.55 + w * 0.35);
 
-    gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+    gl_FragColor = vec4(clamp(col, 0.0, 1.0), clamp(a, 0.0, 1.0));
   }
 `
 
@@ -153,6 +151,7 @@ function LiquidMesh({ onComplete, stirRef }: LiquidMeshProps) {
           uTime: { value: 0 },
           uWarp: { value: 0 },
         }}
+        transparent={true}
         depthTest={false}
         depthWrite={false}
       />
@@ -212,10 +211,9 @@ export default function LiquidOverlay({ onComplete }: Props) {
       <Canvas
         orthographic
         camera={{ near: -1, far: 1, zoom: 1 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: true }}
         style={{ display: 'block', width: '100%', height: '100%' }}
         tabIndex={-1}
-        onCreated={({ gl }) => gl.setClearColor('#1a0303')}
       >
         <LiquidMesh onComplete={onComplete} stirRef={stirRef} />
       </Canvas>
