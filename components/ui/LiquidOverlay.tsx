@@ -1,22 +1,31 @@
 'use client'
 
-/* LiquidOverlay — threejs-components liquid1 effect, transparent over grass.
-   Loaded via module script (bypasses webpack to avoid bundled-Three conflict).
-   Stir with cursor to accumulate progress; onComplete fires at STIR_GOAL or AUTO_MS. */
+/* LiquidOverlay — threejs-components liquid1 effect, invisible over grass.
+   opacity 0 = pure distortion, no colour. Stir to complete; on complete
+   a white brightness fade plays before onComplete fires. */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
-const STIR_GOAL = 14.0
-const AUTO_MS   = 18000
+const STIR_GOAL  = 14.0
+const AUTO_MS    = 18000
+const FADE_MS    = 900    // white fade duration before onComplete
 
 interface Props { onComplete: () => void }
 
 export default function LiquidOverlay({ onComplete }: Props) {
-  const divRef      = useRef<HTMLDivElement>(null)
-  const lastPos     = useRef({ x: -1, y: -1 })
-  const stirTotal   = useRef(0)
-  const completed   = useRef(false)
+  const divRef    = useRef<HTMLDivElement>(null)
+  const lastPos   = useRef({ x: -1, y: -1 })
+  const stirTotal = useRef(0)
+  const completed = useRef(false)
+  const [fading, setFading] = useState(false)
+
+  const triggerComplete = useRef(() => {
+    if (completed.current) return
+    completed.current = true
+    setFading(true)
+    setTimeout(() => onComplete(), FADE_MS)
+  })
 
   useEffect(() => {
     // Lock body scroll
@@ -34,7 +43,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
         if (!canvas) return;
         const app = LiquidBackground(canvas);
         app.liquidPlane.material.transparent = true;
-        app.liquidPlane.material.opacity     = 0.28;
+        app.liquidPlane.material.opacity     = 0;
         app.liquidPlane.material.metalness   = 0.95;
         app.liquidPlane.material.roughness   = 0.05;
         app.liquidPlane.uniforms.displacementScale.value = 5;
@@ -48,9 +57,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
     document.head.appendChild(script)
 
     // Fallback auto-complete
-    const timer = setTimeout(() => {
-      if (!completed.current) { completed.current = true; onComplete() }
-    }, AUTO_MS)
+    const timer = setTimeout(() => triggerComplete.current(), AUTO_MS)
 
     return () => {
       clearTimeout(timer)
@@ -59,7 +66,6 @@ export default function LiquidOverlay({ onComplete }: Props) {
       ;(window as any).__liquidApp__?.dispose()
       ;(window as any).__liquidApp__ = null
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Touch (passive:false to preventDefault)
@@ -72,13 +78,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
         stirTotal.current = Math.min(stirTotal.current + 0.08, STIR_GOAL)
         lastPos.current = { x: t.clientX / window.innerWidth, y: t.clientY / window.innerHeight }
       }
-      if (!completed.current && stirTotal.current >= STIR_GOAL) {
-        completed.current = true; onComplete()
-      }
+      if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
     }
     div.addEventListener('touchmove', onTouch, { passive: false })
     return () => div.removeEventListener('touchmove', onTouch)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -88,9 +91,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
       const delta = Math.hypot(nx - lastPos.current.x, ny - lastPos.current.y)
       if (delta > 0.002) {
         stirTotal.current = Math.min(stirTotal.current + delta * 3.5, STIR_GOAL)
-        if (!completed.current && stirTotal.current >= STIR_GOAL) {
-          completed.current = true; onComplete()
-        }
+        if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
       }
     }
     lastPos.current = { x: nx, y: ny }
@@ -107,6 +108,20 @@ export default function LiquidOverlay({ onComplete }: Props) {
         style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
       />
 
+      {/* White brightness fade-to-white overlay */}
+      {fading && (
+        <div
+          aria-hidden="true"
+          style={{
+            position:   'absolute',
+            inset:      0,
+            background: '#ffffff',
+            animation:  `liqFadeWhite ${FADE_MS}ms ease-in forwards`,
+            pointerEvents: 'none',
+          }}
+        />
+      )}
+
       <div
         aria-hidden="true"
         style={{
@@ -122,7 +137,8 @@ export default function LiquidOverlay({ onComplete }: Props) {
           color:         'rgba(255,255,255,0.45)',
           whiteSpace:    'nowrap',
           pointerEvents: 'none',
-          animation:     'liqHint 2.8s ease-in-out infinite',
+          animation:     fading ? 'none' : 'liqHint 2.8s ease-in-out infinite',
+          opacity:       fading ? 0 : undefined,
         }}
       >
         Stir to enter
@@ -132,6 +148,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
         @keyframes liqHint {
           0%, 100% { opacity: 0.25; }
           50%       { opacity: 0.9;  }
+        }
+        @keyframes liqFadeWhite {
+          0%   { opacity: 0; }
+          100% { opacity: 1; }
         }
       `}</style>
     </div>,
