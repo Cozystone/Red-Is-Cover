@@ -40,14 +40,14 @@ export default function LiquidOverlay({ onComplete }: Props) {
         const canvas = document.getElementById('__liquid_canvas__');
         if (!canvas) return;
         const app = LiquidBackground(canvas);
-        app.liquidPlane.material.transparent = true;
-        app.liquidPlane.material.opacity     = 0.9;
+        app.liquidPlane.material.color.set(0x111111);
         app.liquidPlane.material.metalness   = 0.75;
         app.liquidPlane.material.roughness   = 0.25;
         app.liquidPlane.uniforms.displacementScale.value = 5;
         app.setRain(false);
         if (app.three && app.three.renderer) {
           app.three.renderer.setClearColor(0x000000, 0);
+          app.three.renderer.alpha = true;
         }
         window.__liquidApp__ = app;
       })();
@@ -102,7 +102,13 @@ export default function LiquidOverlay({ onComplete }: Props) {
     >
       <canvas
         id="__liquid_canvas__"
-        style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
+        style={{
+          display:    'block',
+          width:      '100%',
+          height:     '100%',
+          background: 'transparent',
+          animation:  'liqCanvasIn 0.6s ease-out forwards',
+        }}
       />
 
       {fading && (
@@ -141,6 +147,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
       </div>
 
       <style>{`
+        @keyframes liqCanvasIn {
+          0%   { opacity: 0; }
+          100% { opacity: 1; }
+        }
         @keyframes liqHint {
           0%, 100% { opacity: 0.3; }
           50%       { opacity: 1.0; }
