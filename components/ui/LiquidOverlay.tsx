@@ -4,27 +4,26 @@
    GrassField is unmounted before this mounts, so no WebGL context conflict.
    Stir with cursor → fade to white → onComplete. */
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 
 const STIR_GOAL = 14.0
 const AUTO_MS   = 18000
-const FADE_MS   = 700
 
 interface Props { onComplete: () => void }
 
 export default function LiquidOverlay({ onComplete }: Props) {
   const divRef      = useRef<HTMLDivElement>(null)
+  const whiteRef    = useRef<HTMLDivElement>(null)
+  const hintRef     = useRef<HTMLDivElement>(null)
   const lastPos     = useRef({ x: -1, y: -1 })
   const stirTotal   = useRef(0)
   const completed   = useRef(false)
-  const [fading, setFading] = useState(false)
 
   const triggerComplete = useRef(() => {
     if (completed.current) return
     completed.current = true
-    setFading(true)
-    setTimeout(() => onComplete(), FADE_MS)
+    onComplete()
   })
 
   useEffect(() => {
@@ -65,6 +64,14 @@ export default function LiquidOverlay({ onComplete }: Props) {
     }
   }, [])
 
+  const addStir = (delta: number) => {
+    stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
+    const progress = stirTotal.current / STIR_GOAL
+    if (whiteRef.current) whiteRef.current.style.opacity = String(progress)
+    if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - progress * 2))
+    if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
+  }
+
   // Touch
   useEffect(() => {
     const div = divRef.current
@@ -72,10 +79,9 @@ export default function LiquidOverlay({ onComplete }: Props) {
     const onTouch = (e: TouchEvent) => {
       e.preventDefault()
       for (const t of Array.from(e.touches)) {
-        stirTotal.current = Math.min(stirTotal.current + 0.08, STIR_GOAL)
+        addStir(0.08)
         lastPos.current = { x: t.clientX / window.innerWidth, y: t.clientY / window.innerHeight }
       }
-      if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
     }
     div.addEventListener('touchmove', onTouch, { passive: false })
     return () => div.removeEventListener('touchmove', onTouch)
@@ -86,10 +92,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
     const ny = e.clientY / window.innerHeight
     if (lastPos.current.x >= 0) {
       const delta = Math.hypot(nx - lastPos.current.x, ny - lastPos.current.y)
-      if (delta > 0.002) {
-        stirTotal.current = Math.min(stirTotal.current + delta * 3.5, STIR_GOAL)
-        if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
-      }
+      if (delta > 0.002) addStir(delta * 3.5)
     }
     lastPos.current = { x: nx, y: ny }
   }
@@ -111,20 +114,21 @@ export default function LiquidOverlay({ onComplete }: Props) {
         }}
       />
 
-      {fading && (
-        <div
-          aria-hidden="true"
-          style={{
-            position:      'absolute',
-            inset:         0,
-            background:    '#ffffff',
-            animation:     `liqFadeWhite ${FADE_MS}ms ease-in forwards`,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
+      {/* White overlay — opacity driven by stir progress via ref, starts at 0 */}
+      <div
+        ref={whiteRef}
+        aria-hidden="true"
+        style={{
+          position:      'absolute',
+          inset:         0,
+          background:    '#ffffff',
+          opacity:       0,
+          pointerEvents: 'none',
+        }}
+      />
 
       <div
+        ref={hintRef}
         aria-hidden="true"
         style={{
           position:      'absolute',
@@ -139,8 +143,7 @@ export default function LiquidOverlay({ onComplete }: Props) {
           color:         'rgba(255,255,255,0.6)',
           whiteSpace:    'nowrap',
           pointerEvents: 'none',
-          opacity:       fading ? 0 : undefined,
-          animation:     fading ? 'none' : 'liqHint 2.8s ease-in-out infinite',
+          animation:     'liqHint 2.8s ease-in-out infinite',
         }}
       >
         Stir to enter
@@ -154,10 +157,6 @@ export default function LiquidOverlay({ onComplete }: Props) {
         @keyframes liqHint {
           0%, 100% { opacity: 0.3; }
           50%       { opacity: 1.0; }
-        }
-        @keyframes liqFadeWhite {
-          0%   { opacity: 0; }
-          100% { opacity: 1; }
         }
       `}</style>
     </div>,
