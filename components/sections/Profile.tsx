@@ -131,9 +131,10 @@ export default function Profile() {
           {DOSSIER_ROWS.map(({ key, value }, i) => (
             <div
               key={key}
+              className="dossier-row"
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'clamp(100px, 20%, 160px) 16px 1fr',
+                gridTemplateColumns: 'clamp(80px, 20%, 160px) 16px 1fr',
                 alignItems: 'baseline',
                 gap: '0',
                 padding: 'clamp(10px, 1.5vw, 16px) 0',
@@ -221,6 +222,16 @@ export default function Profile() {
       >
         Available for select collaboration. Based in Seoul, Korea.
       </p>
+
+      <style>{`
+        @media (max-width: 480px) {
+          .dossier-row {
+            grid-template-columns: 1fr !important;
+            gap: 4px !important;
+          }
+          .dossier-row > span:nth-child(2) { display: none; }
+        }
+      `}</style>
     </section>
   )
 }

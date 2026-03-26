@@ -149,7 +149,7 @@ export default function World() {
                 fontWeight: 300,
                 lineHeight: 1.3,
                 color: '#FAF8F5',
-                paddingLeft: `calc(${i} * clamp(24px, 4vw, 64px))`,
+                paddingLeft: `calc(${i} * clamp(16px, 3vw, 48px))`,
               }}
             >
               {text}

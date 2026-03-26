@@ -69,16 +69,16 @@ function GunMesh({ gunState, navButtonPos, updateAimPos }: GunMeshProps) {
       g.scale.set(-base * 1.6, base * 1.6, base * 1.6)
 
       if (!dropReady.current) {
-        // Start just above the nav button, not far above — feels instant
-        g.position.set(navWx, navWy + viewport.height * 0.25, 0)
+        // Start very close to final position for instant appearance
+        const targetY = viewport.height * 0.42
+        g.position.set(navWx, targetY + viewport.height * 0.02, 0)
         g.rotation.set(-Math.PI / 2, 0, Math.PI / 2)
         dropReady.current = true
       }
 
-      // Fast drop — lerp 0.18 instead of 0.07
       const targetY = viewport.height * 0.42
       g.position.x  = navWx
-      g.position.y += (targetY - g.position.y) * 0.18
+      g.position.y += (targetY - g.position.y) * 0.55
       g.position.z  = 0
       g.rotation.set(-Math.PI / 2, 0, Math.PI / 2)
 
@@ -103,7 +103,7 @@ function GunMesh({ gunState, navButtonPos, updateAimPos }: GunMeshProps) {
       // Report gun barrel position — shifted up 9% of screen height
       // (barrel is above the gun model's geometric centre in rear-view)
       const nx = (g.position.x / (viewport.width  / 2) + 1) * 0.5
-      const ny = (1 - g.position.y / (viewport.height / 2)) * 0.5 - 0.09
+      const ny = (1 - g.position.y / (viewport.height / 2)) * 0.5 - 0.16
       updateAimPos(nx, Math.max(0.05, ny))
     }
   })

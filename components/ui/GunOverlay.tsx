@@ -282,12 +282,18 @@ function runShatter(
       drawGlassPanes(ctx, ox, oy, cracks, p * 0.6)
 
       for (const crack of cracks) {
-        ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, 0.38 - p * 0.38)})`
-        ctx.lineWidth = 1.8; strokeZigzag(ctx, ox, oy, crack.pts, 1)
+        // White cracks fade out
+        const wA = Math.max(0, 0.38 - p * 0.38)
+        if (wA > 0) { ctx.strokeStyle = `rgba(255,255,255,${wA})`; ctx.lineWidth = 1.8; strokeZigzag(ctx, ox, oy, crack.pts, 1) }
+        // Dark cracks fade in (matching hole canvas)
+        const dA = p > 0.25 ? (p - 0.25) / 0.75 * 0.90 : 0
+        if (dA > 0) { ctx.strokeStyle = `rgba(8,0,0,${dA})`; ctx.lineWidth = 1.6; strokeZigzag(ctx, ox, oy, crack.pts, 1) }
         for (const b of crack.branches) {
           const origin = crack.pts[b.srcIdx]
-          ctx.strokeStyle = `rgba(255,255,255,${Math.max(0, 0.22 - p * 0.22)})`
-          ctx.lineWidth = 0.8; strokeZigzag(ctx, ox + origin.x, oy + origin.y, b.pts, 1)
+          const wAb = Math.max(0, 0.22 - p * 0.22)
+          if (wAb > 0) { ctx.strokeStyle = `rgba(255,255,255,${wAb})`; ctx.lineWidth = 0.8; strokeZigzag(ctx, ox + origin.x, oy + origin.y, b.pts, 1) }
+          const dAb = p > 0.25 ? (p - 0.25) / 0.75 * 0.55 : 0
+          if (dAb > 0) { ctx.strokeStyle = `rgba(8,0,0,${dAb})`; ctx.lineWidth = 0.7; strokeZigzag(ctx, ox + origin.x, oy + origin.y, b.pts, 1) }
         }
       }
     }
@@ -432,10 +438,28 @@ export default function GunOverlay() {
     if (gunState !== 'dropping') return
     didShatter.current = false
     const hc = holeRef.current
-    if (hc) hc.getContext('2d')?.clearRect(0, 0, hc.width, hc.height)
+    if (hc) {
+      hc.style.transition = 'none'
+      hc.style.opacity    = '0'
+      hc.getContext('2d')?.clearRect(0, 0, hc.width, hc.height)
+    }
   }, [gunState])
 
-  // Run shatter animation → draw persistent bullet hole
+  // Time-based fade-out for bullet hole
+  useEffect(() => {
+    if (gunState !== 'revealed') return
+    const hc = holeRef.current
+    if (!hc) return
+
+    const timer = setTimeout(() => {
+      hc.style.transition = 'opacity 0.7s ease'
+      hc.style.opacity    = '0'
+    }, 500)
+
+    return () => clearTimeout(timer)
+  }, [gunState])
+
+  // Run shatter animation → draw bullet hole immediately at start
   useEffect(() => {
     if (gunState !== 'shattering' || didShatter.current) return
     const canvas = shatterRef.current
@@ -446,10 +470,15 @@ export default function GunOverlay() {
     const oy     = shatterOrigin.y * window.innerHeight
     const cracks = generateCracks(window.innerWidth, window.innerHeight)
 
-    runShatter(canvas, ox, oy, cracks, () => {
-      const hc = holeRef.current
-      if (hc) drawBulletHole(hc, cracks, ox, oy)
-    })
+    // Draw hole immediately — visible from frame 0 alongside cracks
+    const hc = holeRef.current
+    if (hc) {
+      drawBulletHole(hc, cracks, ox, oy)
+      hc.style.transition = 'none'
+      hc.style.opacity    = '1'
+    }
+
+    runShatter(canvas, ox, oy, cracks, () => { /* hole already drawn */ })
   }, [gunState, shatterOrigin])
 
   const handleClick = useCallback(() => {
@@ -468,12 +497,11 @@ export default function GunOverlay() {
         style={{
           position:      'fixed',
           inset:         0,
-          zIndex:        15,
+          zIndex:        610,
           pointerEvents: 'none',
           width:         '100%',
           height:        '100%',
-          opacity:       gunState === 'revealed' ? 1 : 0,
-          transition:    'opacity 0.6s ease',
+          opacity:       0,
         }}
       />
 

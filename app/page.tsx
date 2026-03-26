@@ -6,6 +6,7 @@ import Categories from "@/components/sections/Categories";
 import Archive from "@/components/sections/Archive";
 import Profile from "@/components/sections/Profile";
 import Contact from "@/components/sections/Contact";
+import PinterestBoard from "@/components/sections/PinterestBoard";
 import CustomCursor from "@/components/ui/CustomCursor";
 import BackgroundField from "@/components/ui/BackgroundField";
 import GunOverlay from "@/components/ui/GunOverlay";
@@ -26,7 +27,7 @@ export default function Home() {
         {/* VideoHero (sea video) sits in front; gun shot reveals Landing.   */}
         <div style={{
           position:   'relative',
-          height:     '100svh',
+          height:     '100dvh',
           minHeight:  '600px',
           overflow:   'hidden',
         }}>
@@ -42,6 +43,7 @@ export default function Home() {
         </div>
 
         {/* ── Rest of page ─────────────────────────────────────────────────── */}
+        <PinterestBoard />
         <World />
         <Categories />
         <Archive />

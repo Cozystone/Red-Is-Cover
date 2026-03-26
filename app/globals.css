@@ -74,13 +74,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   line-height: 1.6;
-  cursor: none;
 }
 
-/* Hide default cursor everywhere */
-*,
-*:hover {
+/* Hide native cursor everywhere on mouse devices */
+html, body, *, *::before, *::after {
   cursor: none !important;
+}
+
+/* Touch-only devices: restore normal cursor */
+@media (hover: none) and (pointer: coarse) and (any-pointer: coarse) {
+  html, body, * {
+    cursor: auto !important;
+  }
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
 /* ─── Typography Helpers ──────────────────────────────────────────────────── */

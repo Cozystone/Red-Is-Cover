@@ -2,37 +2,52 @@
 
 import dynamic from 'next/dynamic'
 import { useGun } from '@/lib/gunContext'
-import { useRef } from 'react'
+import { useEffect, useState } from 'react'
 
 const KeychainCanvas = dynamic(() => import('./KeychainCanvas'), { ssr: false })
 
 export default function KeychainNav() {
-  const { activate } = useGun()
-  const btnRef = useRef<HTMLAnchorElement>(null)
+  const { gunState, resetGun } = useGun()
+  const [logoVisible, setLogoVisible] = useState(false)
+
+  useEffect(() => {
+    const onScroll = () => { if (window.scrollY > 60) setLogoVisible(true) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    if (gunState === 'revealed') setLogoVisible(true)
+  }, [gunState])
+
+  const handleLogo = (e: React.MouseEvent) => {
+    if (gunState === 'revealed') {
+      e.preventDefault()
+      resetGun()
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   return (
     <>
-      {/* ── Fixed nav container — 200px ──────────────────────────────────── */}
       <div
         style={{
           position:      'fixed',
           top:           0,
           left:          0,
           right:         0,
-          height:        '200px',
+          height:        'clamp(120px, 20vh, 200px)',
           zIndex:        200,
           pointerEvents: 'none',
         }}
       >
-        {/* 3D keychain canvas — full area, transparent bg */}
         <div style={{ position: 'absolute', inset: 0, pointerEvents: 'auto' }}>
           <KeychainCanvas />
         </div>
 
-
-        {/* ── RED IS COVER logo — top-left, Helvetica ─────────────────────── */}
         <a
           href="/"
+          onClick={handleLogo}
           aria-label="RED IS COVER — Home"
           style={{
             position:       'absolute',
@@ -43,21 +58,22 @@ export default function KeychainNav() {
             alignItems:     'center',
             fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
             fontSize:       '11px',
-            fontWeight:     500,
+            fontWeight:     700,
             letterSpacing:  '0.22em',
             textTransform:  'uppercase',
             color:          '#FAF8F5',
             textDecoration: 'none',
-            pointerEvents:  'auto',
+            pointerEvents:  logoVisible ? 'auto' : 'none',
             zIndex:         10,
             textShadow:     '0 1px 8px rgba(0,0,0,0.8)',
+            opacity:        logoVisible ? 1 : 0,
+            transition:     'opacity 0.6s ease',
           }}
         >
           RED IS COVER
         </a>
       </div>
 
-      {/* Screen-reader nav */}
       <nav
         aria-label="Main navigation"
         style={{ position: 'fixed', top: 0, left: '-9999px', opacity: 0, pointerEvents: 'none' }}

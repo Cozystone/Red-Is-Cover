@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"C:/ASKIM_all/Personal Project/0.Claude Code/Creative Portfolio/portfolio\" && git add -A && git diff --cached --quiet || git commit -m \"auto: deploy changes\" && git push origin master",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}

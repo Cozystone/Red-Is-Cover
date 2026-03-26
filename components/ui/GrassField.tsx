@@ -1,248 +1,337 @@
 'use client'
 
-import { useRef, useEffect } from 'react'
+// GrassField — InstancedMesh grass + Freeman Alley backdrop
+// Shadows via shadow map. Spring-physics sway + mouse-velocity parting.
 
-// ── Blade model ────────────────────────────────────────────────────────────────
+import { Suspense, useRef, useMemo, useEffect } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
+import * as THREE from 'three'
 
-interface Blade {
-  x:     number   // base X on canvas
-  z:     number   // depth 0=back, 1=front (painter's order)
-  h:     number   // natural height in px
-  hw:    number   // half-width at base (tapers to 0 at tip)
-  lean:  number   // natural rest lean (tip offset from base, px)
-  phase: number   // phase offset for wind wave
-  disp:  number   // current tip displacement from rest
-  vel:   number   // tip velocity
-  cr: number; cg: number; cb: number   // base colour
+useGLTF.preload('/alley_opt.glb')
+useGLTF.preload('/grass_opt.glb')
+
+const TOTAL_BLADES  = 1400
+const MOUSE_WORLD_X = 7
+
+function xHalfAt(z: number): number {
+  if (z >= 0) return 7.0
+  const t = Math.min(1, -z / 14)
+  return 4.0 - t * 2.4
 }
 
-// ── Config ─────────────────────────────────────────────────────────────────────
+// ── Camera setup ───────────────────────────────────────────────────────────────
 
-const N        = 400       // blade count
-const CANVAS_H = 360       // canvas CSS height in px
-const SPRING   = 0.018     // spring constant (return-to-rest)
-const DAMPING  = 0.78      // velocity damping per frame
-const AMB_AMP  = 18        // max ambient wind displacement at tip
-const AMB_FREQ = 0.00050   // ambient wave speed (frames)
-const MOUSE_R  = 220       // cursor influence radius in px
-const BRUSH_F  = 0.30      // cursor brush force (velocity-based)
+function CameraSetup() {
+  const { camera } = useThree()
+  useEffect(() => { camera.lookAt(0, 0.2, -10) }, [camera])
+  return null
+}
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
+// ── Auto-fit helper ────────────────────────────────────────────────────────────
 
-function makeBlades(w: number): Blade[] {
-  const blades: Blade[] = []
+function fitScene(obj: THREE.Object3D, targetSize: number) {
+  const box    = new THREE.Box3().setFromObject(obj)
+  const size   = box.getSize(new THREE.Vector3())
+  const maxDim = Math.max(size.x, size.y, size.z)
+  obj.scale.setScalar(targetSize / (maxDim || 1))
+  const box2 = new THREE.Box3().setFromObject(obj)
+  const ctr  = box2.getCenter(new THREE.Vector3())
+  obj.position.x -= ctr.x
+  obj.position.z -= ctr.z
+  obj.position.y -= box2.min.y
+}
 
-  for (let i = 0; i < N; i++) {
-    const z     = Math.random()                     // 0=back, 1=front
-    const scale = 0.36 + z * 0.64
-    const h     = (60 + Math.random() * 140) * scale
-    const hw    = (2.0 + Math.random() * 3.5) * scale  // half-width at base
+// ── Alley background ───────────────────────────────────────────────────────────
 
-    // Colour: back=dark cool green, front=bright warm green with olive tints
-    const cr = Math.round(6  + z * 30  + Math.random() * 12)
-    const cg = Math.round(60 + z * 85  + Math.random() * 22)
-    const cb = Math.round(4  + z * 16  + Math.random() * 8)
-
-    blades.push({
-      x:     Math.random() * w,
-      z,
-      h,
-      hw,
-      lean:  (Math.random() - 0.5) * 24 * scale,
-      phase: Math.random() * Math.PI * 2,
-      disp:  0,
-      vel:   0,
-      cr, cg, cb,
+function Alley() {
+  const { scene } = useGLTF('/alley_opt.glb')
+  const cloned = useMemo(() => {
+    const c = scene.clone(true)
+    fitScene(c, 20)
+    c.position.z -= 5
+    c.position.y -= 0.05
+    // Enable shadow receiving on all alley meshes
+    c.traverse(child => {
+      if (child instanceof THREE.Mesh) {
+        child.receiveShadow = true
+      }
     })
+    return c
+  }, [scene])
+  return <primitive object={cloned} />
+}
+
+// ── InstancedMesh grass ────────────────────────────────────────────────────────
+
+interface MouseRef    { current: { x: number; y: number } }
+interface MouseVelRef { current: number }   // x-axis velocity only
+
+interface BladeData {
+  x: number; y: number; z: number
+  rotY: number; scale: number; phase: number
+  curRotZ: number
+  velRotZ: number   // spring velocity
+}
+
+// Spring constants — tweak for feel
+const SPRING_K = 18   // stiffness
+const SPRING_D = 7    // damping (>= 2*sqrt(K) for critically-damped)
+
+function GrassInstances({ mouseRef, mouseVelRef }: { mouseRef: MouseRef; mouseVelRef: MouseVelRef }) {
+  const { scene: src } = useGLTF('/grass_opt.glb')
+  const floorRef = useRef<THREE.InstancedMesh>(null)
+  const alleyRef = useRef<THREE.InstancedMesh>(null)
+  const dummy    = useMemo(() => new THREE.Object3D(), [])
+
+  const { geometry, matFloor, matAlley, bladeH, geoMinY } = useMemo(() => {
+    const meshes: THREE.Mesh[] = []
+    src.traverse(c => { if (c instanceof THREE.Mesh) meshes.push(c) })
+    const found = meshes[0]
+
+    const geo = found
+      ? (() => {
+          const g = found.geometry.clone()
+          const keep = new Set(['position', 'normal', 'uv', 'color'])
+          for (const key of Object.keys(g.attributes)) {
+            if (!keep.has(key)) g.deleteAttribute(key)
+          }
+          g.morphAttributes = {}
+          return g
+        })()
+      : new THREE.PlaneGeometry(0.06, 0.35) as THREE.BufferGeometry
+
+    const srcMat = found
+      ? (Array.isArray(found.material) ? found.material[0] : found.material) as THREE.MeshStandardMaterial
+      : new THREE.MeshStandardMaterial({ color: '#3d6b2e' })
+
+    const mFloor = srcMat.clone()
+    mFloor.side       = THREE.DoubleSide
+    mFloor.depthTest  = false
+    mFloor.depthWrite = false
+
+    const mAlley = srcMat.clone()
+    mAlley.side       = THREE.DoubleSide
+    mAlley.depthWrite = false
+
+    const box    = new THREE.Box3().setFromObject(src)
+    const bladeH = box.getSize(new THREE.Vector3()).y || 1
+    geo.computeBoundingBox()
+    const bb      = geo.boundingBox!
+    const geoMinY = bb.min.y
+    const geoMaxY = bb.max.y
+
+    // Vertex colors: dark at base (AO shadow), bright at tip
+    const pos   = geo.attributes.position as THREE.BufferAttribute
+    const vcols = new Float32Array(pos.count * 3)
+    for (let i = 0; i < pos.count; i++) {
+      const t = Math.max(0, Math.min(1, (pos.getY(i) - geoMinY) / ((geoMaxY - geoMinY) || 1)))
+      const v = 0.22 + t * 0.78   // stronger shadow at base
+      vcols[i * 3] = v; vcols[i * 3 + 1] = v; vcols[i * 3 + 2] = v
+    }
+    geo.setAttribute('color', new THREE.BufferAttribute(vcols, 3))
+    mFloor.vertexColors = true
+    mAlley.vertexColors = true
+
+    return { geometry: geo, matFloor: mFloor as THREE.Material, matAlley: mAlley as THREE.Material, bladeH, geoMinY }
+  }, [src])
+
+  const { floorBlades, alleyBlades } = useMemo<{ floorBlades: BladeData[]; alleyBlades: BladeData[] }>(() => {
+    const floor: BladeData[] = []
+    const alley: BladeData[] = []
+
+    const makeBlade = (x: number, z: number): BladeData => {
+      const depthScale = z < 0 ? 0.6 + 0.4 * (1 + z / 14) : 1.0
+      const scale = (0.16 + Math.random() * 0.18) * depthScale / bladeH
+      return { x, y: -geoMinY * scale + 0.12, z, rotY: Math.random() * Math.PI * 2, scale, phase: Math.random() * Math.PI * 2, curRotZ: 0, velRotZ: 0 }
+    }
+
+    for (let i = 0; i < TOTAL_BLADES; i++) {
+      const onSidewalk = Math.random() < 0.60
+      const z = onSidewalk ? Math.random() * 4.0 : -14.0 + Math.random() * 14.5
+      const xH = xHalfAt(z)
+      const r  = Math.random()
+      let x: number
+      if (onSidewalk) {
+        x = (Math.random() - 0.5) * xH * 2
+      } else {
+        if (r < 0.20)      x = -(xH * 0.6 + Math.random() * xH * 0.4)
+        else if (r < 0.40) x =  (xH * 0.6 + Math.random() * xH * 0.4)
+        else               x = (Math.random() - 0.5) * xH * 2
+      }
+      const b = makeBlade(x, z)
+      if (z >= 0) floor.push(b); else alley.push(b)
+    }
+
+    // 1-point perspective streaks toward vanishing point
+    const VP_Z = 11
+    for (let i = 0; i < 500; i++) {
+      const z  = -(Math.random() * VP_Z)
+      const t  = 1 - (-z / VP_Z)
+      const x0 = (Math.random() - 0.5) * 14
+      alley.push(makeBlade(x0 * t, z))
+    }
+    // Extra building-side density
+    for (let i = 0; i < 350; i++) {
+      const z   = -(Math.random() * VP_Z)
+      const t   = 1 - (-z / VP_Z)
+      const abs = 2.5 + Math.random() * 4.5
+      const x0  = (Math.random() < 0.5 ? -1 : 1) * abs
+      alley.push(makeBlade(x0 * t, z))
+    }
+
+    return { floorBlades: floor, alleyBlades: alley }
+  }, [bladeH, geoMinY])
+
+  const initMesh = (mesh: THREE.InstancedMesh | null, blades: BladeData[]) => {
+    if (!mesh) return
+    blades.forEach((b, i) => {
+      dummy.position.set(b.x, b.y, b.z)
+      dummy.rotation.set(0, b.rotY, 0)
+      dummy.scale.setScalar(b.scale)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(i, dummy.matrix)
+    })
+    mesh.instanceMatrix.needsUpdate = true
   }
 
-  blades.sort((a, b) => a.z - b.z)
-  return blades
-}
+  useEffect(() => { initMesh(floorRef.current, floorBlades) }, [floorBlades])
+  useEffect(() => { initMesh(alleyRef.current, alleyBlades) }, [alleyBlades])
 
-// ── Blade drawing: real grass shape — tapered filled bezier ───────────────────
-// Wide at base, narrows smoothly to a fine tip. Two quadratic bezier curves
-// form the left/right edges; a centre-vein highlight sits on top.
+  useFrame(({ clock }, dt) => {
+    const safe        = Math.min(dt, 0.033)
+    const t           = clock.elapsedTime
+    const mouseWorldX = mouseRef.current.x * MOUSE_WORLD_X
+    const mVel        = mouseVelRef.current   // horizontal cursor velocity
+    const RADIUS      = 2.5
 
-function drawBlade(ctx: CanvasRenderingContext2D, b: Blade, groundY: number) {
-  const totalLean = b.lean + b.disp
-  const bx = b.x
-  const by = groundY
-  const tx = bx + totalLean          // tip x
-  const ty = by - b.h                // tip y
+    const updateMesh = (mesh: THREE.InstancedMesh | null, blades: BladeData[]) => {
+      if (!mesh) return
+      blades.forEach((b, i) => {
+        const dx   = b.x - mouseWorldX
+        const dist = Math.abs(dx)
 
-  // Control point at ~52% height — produces natural S-curve bend
-  const cx = bx + totalLean * 0.44
-  const cy = by - b.h * 0.52
+        // Ambient wind — gentle, phase-offset per blade
+        const wind = Math.sin(b.x * 0.4 + t * 1.2 + b.phase) * 0.035 * (b.z < 0 ? 1.2 : 1.0)
 
-  const hw = b.hw
-
-  // ── Filled blade path: left edge up → tip → right edge down ──────────────
-  ctx.save()
-  ctx.beginPath()
-  ctx.moveTo(bx - hw,      by)
-  // Left edge: control point shifted inward at half-width, zero at tip
-  ctx.quadraticCurveTo(cx - hw * 0.35, cy, tx, ty)
-  // Right edge: mirror
-  ctx.quadraticCurveTo(cx + hw * 0.35, cy, bx + hw, by)
-  ctx.closePath()
-
-  // Vertical gradient: dark rich at base → lighter yellow-green at tip
-  const grad = ctx.createLinearGradient(bx, by, tx, ty)
-  grad.addColorStop(0,    `rgb(${b.cr},       ${b.cg},       ${b.cb})`)
-  grad.addColorStop(0.45, `rgb(${b.cr + 14},  ${b.cg + 42},  ${b.cb + 8})`)
-  grad.addColorStop(1,    `rgb(${b.cr + 28},  ${b.cg + 70},  ${b.cb + 16})`)
-  ctx.fillStyle = grad
-  ctx.fill()
-  ctx.restore()
-
-  // ── Centre vein (subtle lighter highlight) ────────────────────────────────
-  ctx.beginPath()
-  ctx.moveTo(bx, by)
-  ctx.quadraticCurveTo(cx, cy, tx, ty)
-  ctx.lineWidth   = hw * 0.22
-  ctx.lineCap     = 'round'
-  ctx.strokeStyle = `rgba(${b.cr + 50},${b.cg + 90},${b.cb + 22},0.28)`
-  ctx.stroke()
-}
-
-// ── Component ──────────────────────────────────────────────────────────────────
-
-export default function GrassField() {
-  const canvasRef  = useRef<HTMLCanvasElement>(null)
-  const bladesRef  = useRef<Blade[]>([])
-  const mouseRef   = useRef({ x: -9999, y: 0 })
-  const prevXRef   = useRef(-9999)    // previous frame mouse X for velocity
-  const rafRef     = useRef<number>(0)
-  const frameRef   = useRef(0)
-  const dprRef     = useRef(1)
-
-  useEffect(() => {
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')!
-
-    dprRef.current = window.devicePixelRatio || 1
-
-    // ── Resize ────────────────────────────────────────────────────────────────
-
-    function resize() {
-      const dpr = dprRef.current
-      const el  = canvasRef.current!
-      const w   = el.offsetWidth
-      el.width  = w * dpr
-      el.height = CANVAS_H * dpr
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-      bladesRef.current = makeBlades(w)
-    }
-
-    // ── Render loop ───────────────────────────────────────────────────────────
-
-    function tick() {
-      frameRef.current++
-      const t       = frameRef.current
-      const w       = canvasRef.current?.offsetWidth ?? 0
-      const groundY = CANVAS_H
-
-      ctx.clearRect(0, 0, w, CANVAS_H)
-
-      // Ground shadow at base
-      const grad = ctx.createLinearGradient(0, CANVAS_H - 50, 0, CANVAS_H)
-      grad.addColorStop(0, 'rgba(0,0,0,0)')
-      grad.addColorStop(1, 'rgba(0,0,0,0.40)')
-      ctx.fillStyle = grad
-      ctx.fillRect(0, CANVAS_H - 50, w, 50)
-
-      const mx = mouseRef.current.x
-
-      // Cursor velocity (px/frame) — used for brush-style interaction
-      const cursorVelX = (prevXRef.current !== -9999 && mx !== -9999)
-        ? (mx - prevXRef.current) * 0.8
-        : 0
-      prevXRef.current = mx
-
-      for (const b of bladesRef.current) {
-        // ── Ambient wind: two overlapping sine waves, travelling across field
-        const wave1  = Math.sin(b.x * 0.009 + t * AMB_FREQ + b.phase)
-        const wave2  = Math.sin(b.x * 0.005 + t * AMB_FREQ * 0.61 + b.phase * 1.8) * 0.38
-        const ambient = (wave1 + wave2) * AMB_AMP * b.z * 0.85
-
-        // ── Cursor brush: push in the direction cursor is moving ──────────
-        // Unlike flee-from-cursor, this feels like wind from cursor motion.
-        // Blades bend in the direction cursor sweeps; spring back after.
-        let brushForce = 0
-        if (mx !== -9999 && Math.abs(cursorVelX) > 0.5) {
-          const bladeTipY = CANVAS_H - b.h * 0.5   // approximate tip Y
-          const dx  = b.x - mx
-          const dy  = bladeTipY - mouseRef.current.y
-          const dist = Math.hypot(dx, dy)
-          if (dist < MOUSE_R) {
-            const falloff = (1 - dist / MOUSE_R) ** 1.5
-            brushForce = cursorVelX * BRUSH_F * falloff * b.z
-          }
+        // Mouse push: parting effect uses cursor velocity direction
+        let push = 0
+        if (dist < RADIUS) {
+          const str = (1 - dist / RADIUS) ** 1.6
+          // Push away + lean with cursor travel direction
+          push = -Math.sign(dx) * str * 0.30 + mVel * str * 0.06
         }
 
-        // ── Spring physics ────────────────────────────────────────────────
-        const target      = b.lean + ambient
-        const springForce = (target - b.disp) * SPRING
+        // Spring physics: natural overshoot + settle
+        const target = wind + push
+        const acc    = (target - b.curRotZ) * SPRING_K - b.velRotZ * SPRING_D
+        b.velRotZ   += acc * safe
+        b.curRotZ   += b.velRotZ * safe
+        b.curRotZ    = Math.max(-0.55, Math.min(0.55, b.curRotZ))
 
-        b.vel  += springForce + brushForce
-        b.vel  *= DAMPING
-        b.disp += b.vel
-
-        // Clamp: blades can't bend past 70% of height
-        const cap = b.h * 0.70
-        b.disp = Math.max(-cap, Math.min(cap, b.disp))
-
-        drawBlade(ctx, b, groundY)
-      }
-
-      rafRef.current = requestAnimationFrame(tick)
+        dummy.position.set(b.x, b.y, b.z)
+        dummy.rotation.set(0, b.rotY, b.curRotZ)
+        dummy.scale.setScalar(b.scale)
+        dummy.updateMatrix()
+        mesh.setMatrixAt(i, dummy.matrix)
+      })
+      mesh.instanceMatrix.needsUpdate = true
     }
 
-    // ── Mouse tracking — listen on window, convert to canvas local coords ──
-
-    function onMouseMove(e: MouseEvent) {
-      const el = canvasRef.current
-      if (!el) return
-      const rect = el.getBoundingClientRect()
-      mouseRef.current.x = e.clientX - rect.left
-      mouseRef.current.y = e.clientY - rect.top
-    }
-
-    function onMouseOut() {
-      mouseRef.current.x = -9999
-      prevXRef.current   = -9999
-    }
-
-    resize()
-    window.addEventListener('resize',    resize)
-    window.addEventListener('mousemove', onMouseMove)
-    window.addEventListener('mouseout',  onMouseOut)
-    rafRef.current = requestAnimationFrame(tick)
-
-    return () => {
-      cancelAnimationFrame(rafRef.current)
-      window.removeEventListener('resize',    resize)
-      window.removeEventListener('mousemove', onMouseMove)
-      window.removeEventListener('mouseout',  onMouseOut)
-    }
-  }, [])
+    updateMesh(floorRef.current, floorBlades)
+    updateMesh(alleyRef.current, alleyBlades)
+  })
 
   return (
-    <canvas
-      ref={canvasRef}
-      aria-hidden="true"
+    <>
+      <instancedMesh ref={floorRef} args={[geometry, matFloor, floorBlades.length]}
+        frustumCulled={false} renderOrder={6} castShadow receiveShadow />
+      <instancedMesh ref={alleyRef} args={[geometry, matAlley, alleyBlades.length]}
+        frustumCulled={false} renderOrder={5} castShadow receiveShadow />
+    </>
+  )
+}
+
+// ── Full scene ─────────────────────────────────────────────────────────────────
+
+function Scene() {
+  const mouseRef    = useRef({ x: 0, y: 0 })
+  const mouseVelRef = useRef(0)    // horizontal velocity (NDC units/frame, decays)
+  const prevMouseX  = useRef(0)
+
+  useEffect(() => {
+    const onMove = (e: MouseEvent) => {
+      const nx = (e.clientX / window.innerWidth) * 2 - 1
+      mouseVelRef.current = (nx - prevMouseX.current) * 35
+      prevMouseX.current  = nx
+      mouseRef.current = {
+        x:  nx,
+        y: -(e.clientY / window.innerHeight) * 2 + 1,
+      }
+    }
+    window.addEventListener('mousemove', onMove)
+    return () => window.removeEventListener('mousemove', onMove)
+  }, [])
+
+  // Decay mouse velocity each frame
+  useFrame(() => { mouseVelRef.current *= 0.82 })
+
+  return (
+    <>
+      <CameraSetup />
+      <ambientLight intensity={0.75} />
+      {/* Key light with shadows */}
+      <directionalLight
+        position={[4, 14, 6]}
+        intensity={1.8}
+        castShadow
+        shadow-mapSize-width={512}
+        shadow-mapSize-height={512}
+        shadow-camera-near={0.5}
+        shadow-camera-far={40}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
+        shadow-bias={-0.001}
+      />
+      <directionalLight position={[-4, 4, -2]} intensity={0.5} color="#b8ccdd" />
+      <Suspense fallback={null}>
+        <Alley />
+        <GrassInstances mouseRef={mouseRef} mouseVelRef={mouseVelRef} />
+      </Suspense>
+    </>
+  )
+}
+
+// ── Export ─────────────────────────────────────────────────────────────────────
+
+export default function GrassField() {
+  return (
+    <div
       style={{
-        position:      'absolute',
-        bottom:        0,
-        left:          0,
-        width:         '100%',
-        height:        `${CANVAS_H}px`,
-        display:       'block',
-        pointerEvents: 'none',
-        zIndex:        3,
+        position: 'absolute',
+        bottom:   0,
+        left:     0,
+        width:    '100%',
+        height:   'clamp(220px, 38vh, 400px)',
+        zIndex:   3,
       }}
-    />
+    >
+      <Canvas
+        shadows
+        gl={{
+          alpha:               true,
+          antialias:           true,
+          powerPreference:     'high-performance',
+          toneMapping:         THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1.2,
+        }}
+        camera={{ position: [0, 1.1, 3.2], fov: 64 }}
+        style={{ background: 'transparent' }}
+      >
+        <Scene />
+      </Canvas>
+    </div>
   )
 }

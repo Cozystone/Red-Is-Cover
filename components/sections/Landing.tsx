@@ -1,9 +1,16 @@
 /* Landing Section — cinematic dark gallery entrance */
 /* Replaces Hero.tsx */
 
+'use client'
+
+import { useDeferredValue } from 'react'
 import GrassField from '@/components/ui/GrassField'
+import GolmokSign from '@/components/ui/GolmokSign'
+import { useGun } from '@/lib/gunContext'
 
 export default function Landing() {
+  const { curtainOpen } = useGun()
+  const deferredCurtainOpen = useDeferredValue(curtainOpen)
   return (
     <section
       id="landing"
@@ -12,7 +19,7 @@ export default function Landing() {
         position: 'relative',
         width: '100%',
         height: '100%',          // fills the absolute parent in page.tsx
-        background: 'linear-gradient(180deg, #B00015 0%, #7A0010 70%, #3A0008 100%)',
+        background: 'linear-gradient(180deg, #b50707 0%, #900505 60%, #740404 100%)',
         overflow: 'hidden',
       }}
     >
@@ -154,12 +161,12 @@ export default function Landing() {
       <div
         style={{
           position: 'absolute',
-          bottom: '22%',
+          bottom: 'clamp(80px, 22%, 200px)',
           left: 'calc(var(--page-margin) + 6px)',
           maxWidth: 'min(760px, 88vw)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '24px',
+          gap: 'clamp(12px, 2.5vh, 24px)',
           zIndex: 5,
         }}
       >
@@ -182,11 +189,12 @@ export default function Landing() {
           style={{
             fontFamily: "'Cormorant Garamond', Georgia, serif",
             fontSize: 'clamp(56px, 9vw, 140px)',
-            fontWeight: 300,
+            fontWeight: 400,
             lineHeight: 1.0,
-            color: '#FAF8F5',
+            color: '#FFFFFF',
             letterSpacing: '-0.02em',
             margin: 0,
+            textShadow: '0 2px 24px rgba(0,0,0,0.55), 0 4px 48px rgba(0,0,0,0.35)',
           }}
         >
           The work of
@@ -234,8 +242,11 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* ── Grass field — bottom of section ──────────────────────────────── */}
-      <GrassField />
+      {/* ── Grass field — deferred so WebGL init doesn't block curtain click INP ── */}
+      {deferredCurtainOpen && <GrassField />}
+
+      {/* ── 골목길 sign — right building wall (easter egg) ─────────────────── */}
+      <GolmokSign />
 
       {/* ── Bottom status bar ─────────────────────────────────────────────── */}
       <div

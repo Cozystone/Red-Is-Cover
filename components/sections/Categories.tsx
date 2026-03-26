@@ -120,6 +120,7 @@ function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
         backgroundColor: hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
       }}
       transition={{ duration: 0.18 }}
+      className="category-row"
       style={{
         display: 'grid',
         gridTemplateColumns: '64px 1fr auto auto',
@@ -541,6 +542,17 @@ export default function Categories() {
           onClose={() => setActiveCategory(null)}
         />
       )}
+
+      <style>{`
+        @media (max-width: 480px) {
+          .category-row {
+            grid-template-columns: 36px 1fr auto !important;
+            gap: 12px !important;
+            padding: 20px 0 !important;
+          }
+          .category-row > span:last-child { display: none; }
+        }
+      `}</style>
     </>
   )
 }
