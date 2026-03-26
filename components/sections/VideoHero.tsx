@@ -148,7 +148,7 @@ export default function VideoHero() {
         transition:     revealed
           ? 'opacity 1.4s cubic-bezier(0.4,0,0.2,1) 0.6s, transform 1.6s cubic-bezier(0.4,0,0.2,1) 0.4s'
           : 'none',
-        pointerEvents:  revealed ? 'none' : 'auto',
+        pointerEvents:  (revealed || curtainOpen) ? 'none' : 'auto',
       }}
     >
       {/* ── Looping background video ─────────────────────────────────────── */}
@@ -167,6 +167,7 @@ export default function VideoHero() {
           height:         '100%',
           objectFit:      'cover',
           objectPosition: 'center',
+          pointerEvents:  'none',
         }}
       >
         <source src="/hero.mp4" type="video/mp4" />
@@ -194,6 +195,7 @@ export default function VideoHero() {
           height:          '100%',
           backgroundColor: '#C8001A',
           zIndex:          10,
+          pointerEvents:   'none',
         }}
       />
 
@@ -257,6 +259,7 @@ export default function VideoHero() {
           gap:           '8px',
           zIndex:        5,
           opacity:       0.6,
+          pointerEvents: 'none',
         }}
       >
         <span

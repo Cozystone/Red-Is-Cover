@@ -54,7 +54,7 @@ function Alley() {
     // Enable shadow receiving on all alley meshes
     c.traverse(child => {
       if (child instanceof THREE.Mesh) {
-        child.receiveShadow = true
+        // no shadows — avoids shader validation errors with multiple WebGL contexts
       }
     })
     return c
@@ -245,9 +245,9 @@ function GrassInstances({ mouseRef, mouseVelRef }: { mouseRef: MouseRef; mouseVe
   return (
     <>
       <instancedMesh ref={floorRef} args={[geometry, matFloor, floorBlades.length]}
-        frustumCulled={false} renderOrder={6} castShadow receiveShadow />
+        frustumCulled={false} renderOrder={6} />
       <instancedMesh ref={alleyRef} args={[geometry, matAlley, alleyBlades.length]}
-        frustumCulled={false} renderOrder={5} castShadow receiveShadow />
+        frustumCulled={false} renderOrder={5} />
     </>
   )
 }
@@ -284,16 +284,6 @@ function Scene() {
       <directionalLight
         position={[4, 14, 6]}
         intensity={1.8}
-        castShadow
-        shadow-mapSize-width={512}
-        shadow-mapSize-height={512}
-        shadow-camera-near={0.5}
-        shadow-camera-far={40}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
-        shadow-bias={-0.001}
       />
       <directionalLight position={[-4, 4, -2]} intensity={0.5} color="#b8ccdd" />
       <Suspense fallback={null}>
@@ -310,16 +300,16 @@ export default function GrassField() {
   return (
     <div
       style={{
-        position: 'absolute',
-        bottom:   0,
-        left:     0,
-        width:    '100%',
-        height:   'clamp(220px, 38vh, 400px)',
-        zIndex:   3,
+        position:      'absolute',
+        bottom:        0,
+        left:          0,
+        width:         '100%',
+        height:        'clamp(220px, 38vh, 400px)',
+        zIndex:        3,
+        pointerEvents: 'none',
       }}
     >
       <Canvas
-        shadows
         gl={{
           alpha:               true,
           antialias:           true,

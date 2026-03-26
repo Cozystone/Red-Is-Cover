@@ -37,7 +37,8 @@ export default function Home() {
           </div>
 
           {/* VideoHero — higher z-index, in front (the "glass" that gets shot) */}
-          <div style={{ position: 'absolute', inset: 0, zIndex: 2 }}>
+          {/* pointerEvents:none lets the section inside control its own events */}
+          <div style={{ position: 'absolute', inset: 0, zIndex: 2, pointerEvents: 'none' }}>
             <VideoHero />
           </div>
         </div>
