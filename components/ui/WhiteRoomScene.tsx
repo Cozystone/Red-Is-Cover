@@ -106,7 +106,7 @@ export default function WhiteRoomScene({ onClose }: Props) {
       }}
     >
       <Canvas
-        camera={{ position: [0, 1.4, 6.5], fov: 50 }}
+        camera={{ position: [0, 3.2, 4.2], fov: 42 }}
         gl={{
           antialias:           true,
           toneMapping:         THREE.ACESFilmicToneMapping,
