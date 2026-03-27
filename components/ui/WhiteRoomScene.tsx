@@ -4,7 +4,7 @@
    and vintage_telephone.glb resting on top. The group rotates slowly.
    ESC or clicking the close button exits back to idle. */
 
-import { Suspense, useEffect, useRef, useMemo } from 'react'
+import { Suspense, useEffect, useRef, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF } from '@react-three/drei'
@@ -95,6 +95,8 @@ interface Props {
 }
 
 export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
+  const [fadingOut, setFadingOut] = useState(false)
+
   // Phone ring audio — loop until phone clicked
   useEffect(() => {
     const ring = new Audio('/phone-ring.mp3')
@@ -108,7 +110,8 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
     const pickup = new Audio('/phone-pickup.mp3')
     pickup.volume = 1.0
     pickup.play().catch(() => {})
-    onPhoneClick()
+    setFadingOut(true)
+    setTimeout(() => onPhoneClick(), 650)
   }
 
   useEffect(() => {
@@ -126,7 +129,7 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
         inset:      0,
         zIndex:     9001,
         background: '#f8f8f6',
-        animation:  'wrFadeIn 0.5s ease-out forwards',
+        animation:  fadingOut ? 'wrFadeOut 0.65s ease-in forwards' : 'wrFadeIn 0.5s ease-out forwards',
       }}
     >
       <Canvas
@@ -148,7 +151,8 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
           shadow-camera-near={0.5} shadow-camera-far={30}
           shadow-camera-left={-3} shadow-camera-right={3}
           shadow-camera-top={3} shadow-camera-bottom={-3}
-          shadow-bias={-0.001}
+          shadow-bias={-0.003}
+          shadow-normalBias={0.04}
         />
         {/* Fill light — cool, no shadow */}
         <directionalLight position={[-4, 4, -3]} intensity={1.2} color="#dde8ff" />
@@ -212,10 +216,8 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
       </div>
 
       <style>{`
-        @keyframes wrFadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
-        }
+        @keyframes wrFadeIn  { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes wrFadeOut { from { opacity: 1; } to { opacity: 0; } }
       `}</style>
     </div>,
     document.body

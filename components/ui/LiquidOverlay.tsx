@@ -1,8 +1,8 @@
 'use client'
 
-/* LiquidOverlay — SVG feTurbulence filter applied to Landing section.
-   No new WebGL context; grass stays fully visible, distorted by the filter.
-   Stir → white overlay fades in → onComplete. */
+/* LiquidOverlay — 2D water simulation drives an SVG feImage displacement filter.
+   Cursor movement creates ripples that propagate outward (like water).
+   Stir enough → white overlay fades in → onComplete. */
 
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
@@ -13,12 +13,13 @@ const AUTO_MS   = 18000
 interface Props { onComplete: () => void }
 
 export default function LiquidOverlay({ onComplete }: Props) {
-  const divRef    = useRef<HTMLDivElement>(null)
-  const whiteRef  = useRef<HTMLDivElement>(null)
-  const hintRef   = useRef<HTMLDivElement>(null)
-  const lastPos   = useRef({ x: -1, y: -1 })
-  const stirTotal = useRef(0)
-  const completed = useRef(false)
+  const divRef       = useRef<HTMLDivElement>(null)
+  const whiteRef     = useRef<HTMLDivElement>(null)
+  const hintRef      = useRef<HTMLDivElement>(null)
+  const lastPos      = useRef({ x: -1, y: -1 })
+  const stirTotal    = useRef(0)
+  const completed    = useRef(false)
+  const addRippleRef = useRef<((sx: number, sy: number) => void) | null>(null)
 
   const triggerComplete = useRef(() => {
     if (completed.current) return
@@ -30,34 +31,109 @@ export default function LiquidOverlay({ onComplete }: Props) {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    // Inject SVG filter
+    // ── Water simulation ─────────────────────────────────────────────────────
+    const SIM_SCALE = 7   // 1 sim pixel = 7 screen pixels (~275×155 @ 1920×1080)
+    const simW = Math.ceil(window.innerWidth  / SIM_SCALE)
+    const simH = Math.ceil(window.innerHeight / SIM_SCALE)
+
+    const simCanvas = document.createElement('canvas')
+    simCanvas.width  = simW
+    simCanvas.height = simH
+    const simCtx = simCanvas.getContext('2d')!
+    const imgData = simCtx.createImageData(simW, simH)
+    const { data } = imgData
+
+    // Initialise displacement map to neutral grey (128 = zero displacement)
+    for (let i = 0; i < data.length; i += 4) {
+      data[i] = data[i + 1] = data[i + 2] = 128
+      data[i + 3] = 255
+    }
+    simCtx.putImageData(imgData, 0, 0)
+
+    let buf1 = new Float32Array(simW * simH)  // current frame heights
+    let buf2 = new Float32Array(simW * simH)  // previous frame heights
+    const DAMP = 0.972
+
+    // A few gentle seed disturbances so the surface isn't completely flat on entry
+    for (let k = 0; k < 4; k++) {
+      const cx = Math.floor((k + 0.5) / 4 * simW)
+      const cy = Math.floor(simH / 2 + (k % 2 === 0 ? 12 : -12))
+      if (cx > 0 && cx < simW - 1 && cy > 0 && cy < simH - 1)
+        buf1[cy * simW + cx] = 100
+    }
+
+    // Add a circular ripple at given screen coordinates
+    const addRippleAt = (sx: number, sy: number) => {
+      const cx = Math.floor(sx / SIM_SCALE)
+      const cy = Math.floor(sy / SIM_SCALE)
+      const r = 4
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (dx * dx + dy * dy <= r * r) {
+            const x = cx + dx, y = cy + dy
+            if (x > 0 && x < simW - 1 && y > 0 && y < simH - 1)
+              buf1[y * simW + x] = 280
+          }
+        }
+      }
+    }
+    addRippleRef.current = addRippleAt
+
+    // ── SVG filter ───────────────────────────────────────────────────────────
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
     svg.id = '__liq_svg__'
     svg.setAttribute('style', 'position:fixed;width:0;height:0;overflow:hidden')
+
+    // Prime feImage with neutral grey so there's no displacement on first paint
+    const initHref = simCanvas.toDataURL('image/jpeg', 0.5)
     svg.innerHTML = `<defs>
-      <filter id="__liq_f__" x="-10%" y="-10%" width="120%" height="120%">
-        <feTurbulence id="__liq_t__" type="turbulence"
-          baseFrequency="0.012 0.008" numOctaves="4" seed="3" result="noise"/>
-        <feDisplacementMap id="__liq_d__" in="SourceGraphic" in2="noise"
-          scale="14" xChannelSelector="R" yChannelSelector="G"/>
+      <filter id="__liq_f__" x="-8%" y="-8%" width="116%" height="116%" color-interpolation-filters="sRGB">
+        <feImage id="__liq_img__" href="${initHref}" preserveAspectRatio="none" result="disp"/>
+        <feDisplacementMap in="SourceGraphic" in2="disp"
+          scale="30" xChannelSelector="R" yChannelSelector="G"/>
       </filter>
     </defs>`
     document.body.appendChild(svg)
 
-    // Apply filter to landing section
     const landing = document.getElementById('landing')
     if (landing) landing.style.filter = 'url(#__liq_f__)'
 
-    // Animate turbulence
     let raf: number
-    let t = 0
+    let frame = 0
+
     const tick = () => {
-      t += 0.006
-      const turb = document.getElementById('__liq_t__')
-      if (turb) {
-        turb.setAttribute('baseFrequency',
-          `${(0.012 + Math.sin(t * 0.6) * 0.006).toFixed(5)} ${(0.008 + Math.cos(t * 0.4) * 0.004).toFixed(5)}`)
+      // Propagate wave: each cell averages neighbours minus its previous value
+      for (let y = 1; y < simH - 1; y++) {
+        for (let x = 1; x < simW - 1; x++) {
+          const i = y * simW + x
+          buf2[i] = (buf1[i - 1] + buf1[i + 1] + buf1[i - simW] + buf1[i + simW]) / 2 - buf2[i]
+          buf2[i] *= DAMP
+        }
       }
+      const tmp = buf1; buf1 = buf2; buf2 = tmp
+
+      // Convert height-map to a gradient-based displacement map image
+      // R = horizontal gradient (→ X displacement), G = vertical gradient (→ Y displacement)
+      for (let y = 1; y < simH - 1; y++) {
+        for (let x = 1; x < simW - 1; x++) {
+          const i   = y * simW + x
+          const gx  = buf1[i + 1]    - buf1[i - 1]
+          const gy  = buf1[i + simW] - buf1[i - simW]
+          const off = i * 4
+          data[off]     = Math.min(255, Math.max(0, 128 + gx))
+          data[off + 1] = Math.min(255, Math.max(0, 128 + gy))
+          // B (off+2) and A (off+3) remain 128 / 255 from init
+        }
+      }
+      simCtx.putImageData(imgData, 0, 0)
+
+      // Push new displacement map to SVG filter every other frame (~30 fps)
+      frame++
+      if (frame % 2 === 0) {
+        const imgEl = document.getElementById('__liq_img__')
+        if (imgEl) imgEl.setAttribute('href', simCanvas.toDataURL('image/jpeg', 0.8))
+      }
+
       raf = requestAnimationFrame(tick)
     }
     tick()
@@ -67,31 +143,31 @@ export default function LiquidOverlay({ onComplete }: Props) {
     return () => {
       clearTimeout(timer)
       cancelAnimationFrame(raf)
+      addRippleRef.current = null
       document.body.style.overflow = prev
-      const landing = document.getElementById('landing')
-      if (landing) landing.style.filter = ''
+      const lnd = document.getElementById('landing')
+      if (lnd) lnd.style.filter = ''
       document.getElementById('__liq_svg__')?.remove()
     }
   }, [])
 
   const addStir = (delta: number) => {
     stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
-    const p = stirTotal.current / STIR_GOAL
-    const whiteP = Math.max(0, (p - 0.6) / 0.4)   // white only starts after 60% stir
+    const p      = stirTotal.current / STIR_GOAL
+    const whiteP = Math.max(0, (p - 0.6) / 0.4)   // white starts after 60% stir
     if (whiteRef.current) whiteRef.current.style.opacity = String(whiteP)
     if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - p * 2))
-    const disp = document.getElementById('__liq_d__')
-    if (disp) disp.setAttribute('scale', String(14 + p * 50))
     if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
   }
 
-  // Touch
+  // Touch support
   useEffect(() => {
     const div = divRef.current
     if (!div) return
     const onTouch = (e: TouchEvent) => {
       e.preventDefault()
       for (const t of Array.from(e.touches)) {
+        addRippleRef.current?.(t.clientX, t.clientY)
         addStir(0.08)
         lastPos.current = { x: t.clientX / window.innerWidth, y: t.clientY / window.innerHeight }
       }
@@ -101,6 +177,8 @@ export default function LiquidOverlay({ onComplete }: Props) {
   }, [])
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    addRippleRef.current?.(e.clientX, e.clientY)
+
     const nx = e.clientX / window.innerWidth
     const ny = e.clientY / window.innerHeight
     if (lastPos.current.x >= 0) {
