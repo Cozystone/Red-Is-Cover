@@ -62,8 +62,8 @@ function Display({ onPhoneClick }: { onPhoneClick: () => void }) {
       }
     })
 
-    const pedestalH = fitObject(box,   0.72)
-    fitObject(phone, 0.34)
+    const pedestalH = fitObject(box,   0.9)
+    fitObject(phone, 0.42)
 
     // fitObject places bottom at y=0; shift up by pedestalH to sit on top of pedestal
     phone.position.y += pedestalH
