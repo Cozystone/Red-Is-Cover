@@ -46,9 +46,9 @@ function Display() {
         if (c.material) {
           const m = (Array.isArray(c.material) ? c.material[0] : c.material) as THREE.MeshStandardMaterial
           if (m.isMeshStandardMaterial) {
-            m.color.set(0xffffff)
-            m.roughness  = 0.15
-            m.metalness  = 0.0
+            m.color.set(0xf0f0ee)
+            m.roughness  = 0.25
+            m.metalness  = 0.05
             m.needsUpdate = true
           }
         }
@@ -110,27 +110,30 @@ export default function WhiteRoomScene({ onClose }: Props) {
       }}
     >
       <Canvas
-        camera={{ position: [0, 2.2, 3.5], fov: 28 }}
-        shadows
+        camera={{ position: [0, 2.2, 3.5], fov: 18 }}
+        shadows={{ type: THREE.PCFSoftShadowMap }}
         gl={{
           antialias:           true,
           toneMapping:         THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.1,
+          toneMappingExposure: 1.0,
           powerPreference:     'high-performance',
         }}
         style={{ display: 'block', width: '100%', height: '100%' }}
       >
-        <ambientLight intensity={2.5} color="#ffffff" />
-        <directionalLight position={[4, 10, 6]} intensity={3.5}
+        <ambientLight intensity={1.2} color="#ffffff" />
+        {/* Key light — strong, casts sharp shadow */}
+        <directionalLight position={[5, 10, 6]} intensity={4.5}
           castShadow
-          shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+          shadow-mapSize-width={2048} shadow-mapSize-height={2048}
           shadow-camera-near={0.5} shadow-camera-far={30}
-          shadow-camera-left={-4} shadow-camera-right={4}
-          shadow-camera-top={4} shadow-camera-bottom={-4}
-          shadow-bias={-0.002}
+          shadow-camera-left={-3} shadow-camera-right={3}
+          shadow-camera-top={3} shadow-camera-bottom={-3}
+          shadow-bias={-0.001}
         />
-        <directionalLight position={[-5, 6, -4]} intensity={2}   color="#e8eeff" />
-        <directionalLight position={[0, -3, 4]}  intensity={0.8} color="#fff8f0" />
+        {/* Fill light — cool, no shadow */}
+        <directionalLight position={[-4, 4, -3]} intensity={1.2} color="#dde8ff" />
+        {/* Rim light from below-front */}
+        <directionalLight position={[0, -2, 5]}  intensity={0.6} color="#fff5e8" />
 
         {/* Ground plane */}
         <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
