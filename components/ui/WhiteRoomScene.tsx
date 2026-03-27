@@ -110,7 +110,7 @@ export default function WhiteRoomScene({ onClose }: Props) {
       }}
     >
       <Canvas
-        camera={{ position: [0, 1.9, 2.6], fov: 38 }}
+        camera={{ position: [0, 1.2, 2.6], fov: 38 }}
         shadows
         gl={{
           antialias:           true,
