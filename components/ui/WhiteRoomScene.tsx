@@ -110,7 +110,7 @@ export default function WhiteRoomScene({ onClose }: Props) {
       }}
     >
       <Canvas
-        camera={{ position: [0, 1.6, 3.5], fov: 23 }}
+        camera={{ position: [0, 1.6, 3.5], fov: 34 }}
         shadows={{ type: THREE.PCFSoftShadowMap }}
         gl={{
           antialias:           true,
