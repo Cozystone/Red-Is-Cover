@@ -77,7 +77,8 @@ export default function LiquidOverlay({ onComplete }: Props) {
   const addStir = (delta: number) => {
     stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
     const p = stirTotal.current / STIR_GOAL
-    if (whiteRef.current) whiteRef.current.style.opacity = String(p)
+    const whiteP = Math.max(0, (p - 0.6) / 0.4)   // white only starts after 60% stir
+    if (whiteRef.current) whiteRef.current.style.opacity = String(whiteP)
     if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - p * 2))
     const disp = document.getElementById('__liq_d__')
     if (disp) disp.setAttribute('scale', String(14 + p * 50))
