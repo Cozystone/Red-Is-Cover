@@ -16,6 +16,8 @@ export default function LiquidOverlay({ onComplete }: Props) {
   const divRef       = useRef<HTMLDivElement>(null)
   const whiteRef     = useRef<HTMLDivElement>(null)
   const hintRef      = useRef<HTMLDivElement>(null)
+  const volRef       = useRef<HTMLDivElement>(null)
+  const volShown     = useRef(false)
   const lastPos      = useRef({ x: -1, y: -1 })
   const stirTotal    = useRef(0)
   const completed    = useRef(false)
@@ -151,12 +153,28 @@ export default function LiquidOverlay({ onComplete }: Props) {
     }
   }, [])
 
+  // Show volume hint after 2.5 s delay
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (volRef.current) {
+        volRef.current.style.transition = 'opacity 1.4s ease'
+        volRef.current.style.opacity    = '1'
+        volShown.current = true
+      }
+    }, 2500)
+    return () => clearTimeout(t)
+  }, [])
+
   const addStir = (delta: number) => {
     stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
     const p      = stirTotal.current / STIR_GOAL
     const whiteP = Math.max(0, (p - 0.6) / 0.4)   // white starts after 60% stir
     if (whiteRef.current) whiteRef.current.style.opacity = String(whiteP)
     if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - p * 2))
+    if (volRef.current && volShown.current) {
+      volRef.current.style.transition = 'opacity 0.6s ease'
+      volRef.current.style.opacity    = String(Math.max(0, 1 - p * 2.5))
+    }
     if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
   }
 
@@ -207,6 +225,26 @@ export default function LiquidOverlay({ onComplete }: Props) {
           animation: 'liqHint 2.8s ease-in-out infinite',
         }}
       >Stir to enter</div>
+
+      {/* Volume hint — fades in after 2.5 s, fades out when stirring */}
+      <div ref={volRef} aria-hidden="true"
+        style={{
+          position: 'absolute', top: 'clamp(20px,4vh,48px)', left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex', alignItems: 'center', gap: '10px',
+          fontFamily: "'Helvetica Neue',sans-serif",
+          fontSize: '8px', fontWeight: 400, letterSpacing: '0.26em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)',
+          whiteSpace: 'nowrap', pointerEvents: 'none',
+          opacity: 0,
+        }}
+      >
+        <span style={{ fontSize: '10px', opacity: 0.7 }}>♪</span>
+        turn up your volume
+        <span style={{ opacity: 0.45 }}>·</span>
+        볼륨을 높이세요
+      </div>
+
       <style>{`@keyframes liqHint{0%,100%{opacity:.3}50%{opacity:1}}`}</style>
     </div>,
     document.body,

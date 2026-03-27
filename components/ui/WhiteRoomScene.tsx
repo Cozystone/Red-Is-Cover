@@ -194,6 +194,29 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
         ESC · Close
       </div>
 
+      {/* Phone answer hint */}
+      <div
+        aria-hidden="true"
+        style={{
+          position:      'absolute',
+          bottom:        'clamp(72px, 12vh, 120px)',
+          left:          '50%',
+          transform:     'translateX(-50%)',
+          fontFamily:    "'Helvetica Neue', Helvetica, sans-serif",
+          fontSize:      '8px',
+          fontWeight:    400,
+          letterSpacing: '0.30em',
+          textTransform: 'uppercase',
+          color:         'rgba(0,0,0,0.28)',
+          whiteSpace:    'nowrap',
+          pointerEvents: 'none',
+          userSelect:    'none',
+          animation:     'phoneHint 3.2s ease-in-out infinite',
+        }}
+      >
+        전화를 받으세요 &nbsp;·&nbsp; answer the call
+      </div>
+
       {/* Label */}
       <div
         aria-hidden="true"
@@ -216,8 +239,9 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
       </div>
 
       <style>{`
-        @keyframes wrFadeIn  { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes wrFadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes wrFadeIn   { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes wrFadeOut  { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes phoneHint  { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
       `}</style>
     </div>,
     document.body
