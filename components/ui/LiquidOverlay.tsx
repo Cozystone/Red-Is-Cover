@@ -1,8 +1,8 @@
 'use client'
 
-/* LiquidOverlay — threejs-components liquid1, loaded via module script.
-   GrassField is unmounted before this mounts, so no WebGL context conflict.
-   Stir with cursor → fade to white → onComplete. */
+/* LiquidOverlay — SVG feTurbulence filter applied to Landing section.
+   No new WebGL context; grass stays fully visible, distorted by the filter.
+   Stir → white overlay fades in → onComplete. */
 
 import { useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
@@ -10,15 +10,15 @@ import { createPortal } from 'react-dom'
 const STIR_GOAL = 14.0
 const AUTO_MS   = 18000
 
-interface Props { onComplete: () => void; bgSnapshot?: string }
+interface Props { onComplete: () => void }
 
-export default function LiquidOverlay({ onComplete, bgSnapshot }: Props) {
-  const divRef      = useRef<HTMLDivElement>(null)
-  const whiteRef    = useRef<HTMLDivElement>(null)
-  const hintRef     = useRef<HTMLDivElement>(null)
-  const lastPos     = useRef({ x: -1, y: -1 })
-  const stirTotal   = useRef(0)
-  const completed   = useRef(false)
+export default function LiquidOverlay({ onComplete }: Props) {
+  const divRef    = useRef<HTMLDivElement>(null)
+  const whiteRef  = useRef<HTMLDivElement>(null)
+  const hintRef   = useRef<HTMLDivElement>(null)
+  const lastPos   = useRef({ x: -1, y: -1 })
+  const stirTotal = useRef(0)
+  const completed = useRef(false)
 
   const triggerComplete = useRef(() => {
     if (completed.current) return
@@ -30,45 +30,57 @@ export default function LiquidOverlay({ onComplete, bgSnapshot }: Props) {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
 
-    const script = document.createElement('script')
-    script.type = 'module'
-    script.id   = '__liquid_script__'
-    script.textContent = `
-      import LiquidBackground from '/liquid1.min.js';
-      (function() {
-        const canvas = document.getElementById('__liquid_canvas__');
-        if (!canvas) return;
-        const app = LiquidBackground(canvas);
-        app.liquidPlane.material.color.set(0x111111);
-        app.liquidPlane.material.metalness   = 0.75;
-        app.liquidPlane.material.roughness   = 0.25;
-        app.liquidPlane.uniforms.displacementScale.value = 5;
-        app.setRain(false);
-        if (app.three && app.three.renderer) {
-          app.three.renderer.setClearColor(0x000000, 0);
-          app.three.renderer.alpha = true;
-        }
-        window.__liquidApp__ = app;
-      })();
-    `
-    document.head.appendChild(script)
+    // Inject SVG filter
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    svg.id = '__liq_svg__'
+    svg.setAttribute('style', 'position:fixed;width:0;height:0;overflow:hidden')
+    svg.innerHTML = `<defs>
+      <filter id="__liq_f__" x="-10%" y="-10%" width="120%" height="120%">
+        <feTurbulence id="__liq_t__" type="turbulence"
+          baseFrequency="0.012 0.008" numOctaves="4" seed="3" result="noise"/>
+        <feDisplacementMap id="__liq_d__" in="SourceGraphic" in2="noise"
+          scale="14" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>`
+    document.body.appendChild(svg)
+
+    // Apply filter to landing section
+    const landing = document.getElementById('landing')
+    if (landing) landing.style.filter = 'url(#__liq_f__)'
+
+    // Animate turbulence
+    let raf: number
+    let t = 0
+    const tick = () => {
+      t += 0.006
+      const turb = document.getElementById('__liq_t__')
+      if (turb) {
+        turb.setAttribute('baseFrequency',
+          `${(0.012 + Math.sin(t * 0.6) * 0.006).toFixed(5)} ${(0.008 + Math.cos(t * 0.4) * 0.004).toFixed(5)}`)
+      }
+      raf = requestAnimationFrame(tick)
+    }
+    tick()
 
     const timer = setTimeout(() => triggerComplete.current(), AUTO_MS)
 
     return () => {
       clearTimeout(timer)
+      cancelAnimationFrame(raf)
       document.body.style.overflow = prev
-      document.head.querySelector('#__liquid_script__')?.remove()
-      ;(window as any).__liquidApp__?.dispose()
-      ;(window as any).__liquidApp__ = null
+      const landing = document.getElementById('landing')
+      if (landing) landing.style.filter = ''
+      document.getElementById('__liq_svg__')?.remove()
     }
   }, [])
 
   const addStir = (delta: number) => {
     stirTotal.current = Math.min(stirTotal.current + delta, STIR_GOAL)
-    const progress = stirTotal.current / STIR_GOAL
-    if (whiteRef.current) whiteRef.current.style.opacity = String(progress)
-    if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - progress * 2))
+    const p = stirTotal.current / STIR_GOAL
+    if (whiteRef.current) whiteRef.current.style.opacity = String(p)
+    if (hintRef.current)  hintRef.current.style.opacity  = String(Math.max(0, 1 - p * 2))
+    const disp = document.getElementById('__liq_d__')
+    if (disp) disp.setAttribute('scale', String(14 + p * 50))
     if (stirTotal.current >= STIR_GOAL) triggerComplete.current()
   }
 
@@ -101,67 +113,22 @@ export default function LiquidOverlay({ onComplete, bgSnapshot }: Props) {
     <div
       ref={divRef}
       onPointerMove={handlePointerMove}
-      style={{
-        position:   'fixed', inset: 0, zIndex: 9000, cursor: 'crosshair',
-        background: bgSnapshot ? `url(${bgSnapshot}) center/cover no-repeat` : '#000',
-      }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9000, cursor: 'crosshair' }}
     >
-      <canvas
-        id="__liquid_canvas__"
-        style={{
-          display:    'block',
-          width:      '100%',
-          height:     '100%',
-          background: 'transparent',
-          animation:  'liqCanvasIn 0.6s ease-out forwards',
-        }}
+      <div ref={whiteRef} aria-hidden="true"
+        style={{ position: 'absolute', inset: 0, background: '#fff', opacity: 0, pointerEvents: 'none' }}
       />
-
-      {/* White overlay — opacity driven by stir progress via ref, starts at 0 */}
-      <div
-        ref={whiteRef}
-        aria-hidden="true"
+      <div ref={hintRef} aria-hidden="true"
         style={{
-          position:      'absolute',
-          inset:         0,
-          background:    '#ffffff',
-          opacity:       0,
-          pointerEvents: 'none',
+          position: 'absolute', bottom: 'clamp(28px,5vh,60px)', left: '50%',
+          transform: 'translateX(-50%)', fontFamily: "'Helvetica Neue',sans-serif",
+          fontSize: '9px', fontWeight: 500, letterSpacing: '0.30em',
+          textTransform: 'uppercase', color: 'rgba(255,255,255,0.6)',
+          whiteSpace: 'nowrap', pointerEvents: 'none',
+          animation: 'liqHint 2.8s ease-in-out infinite',
         }}
-      />
-
-      <div
-        ref={hintRef}
-        aria-hidden="true"
-        style={{
-          position:      'absolute',
-          bottom:        'clamp(28px, 5vh, 60px)',
-          left:          '50%',
-          transform:     'translateX(-50%)',
-          fontFamily:    "'Helvetica Neue', Helvetica, sans-serif",
-          fontSize:      '9px',
-          fontWeight:    500,
-          letterSpacing: '0.30em',
-          textTransform: 'uppercase',
-          color:         'rgba(255,255,255,0.6)',
-          whiteSpace:    'nowrap',
-          pointerEvents: 'none',
-          animation:     'liqHint 2.8s ease-in-out infinite',
-        }}
-      >
-        Stir to enter
-      </div>
-
-      <style>{`
-        @keyframes liqCanvasIn {
-          0%   { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        @keyframes liqHint {
-          0%, 100% { opacity: 0.3; }
-          50%       { opacity: 1.0; }
-        }
-      `}</style>
+      >Stir to enter</div>
+      <style>{`@keyframes liqHint{0%,100%{opacity:.3}50%{opacity:1}}`}</style>
     </div>,
     document.body,
   )
