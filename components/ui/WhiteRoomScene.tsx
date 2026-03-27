@@ -77,7 +77,7 @@ function Display() {
   })
 
   return (
-    <group ref={groupRef}>
+    <group ref={groupRef} position={[0, -0.35, 0]}>
       <primitive object={boxMesh} />
       <primitive object={phoneObj} />
     </group>
