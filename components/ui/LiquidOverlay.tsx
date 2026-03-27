@@ -10,9 +10,9 @@ import { createPortal } from 'react-dom'
 const STIR_GOAL = 14.0
 const AUTO_MS   = 18000
 
-interface Props { onComplete: () => void }
+interface Props { onComplete: () => void; bgSnapshot?: string }
 
-export default function LiquidOverlay({ onComplete }: Props) {
+export default function LiquidOverlay({ onComplete, bgSnapshot }: Props) {
   const divRef      = useRef<HTMLDivElement>(null)
   const whiteRef    = useRef<HTMLDivElement>(null)
   const hintRef     = useRef<HTMLDivElement>(null)
@@ -101,7 +101,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
     <div
       ref={divRef}
       onPointerMove={handlePointerMove}
-      style={{ position: 'fixed', inset: 0, zIndex: 9000, cursor: 'crosshair' }}
+      style={{
+        position:   'fixed', inset: 0, zIndex: 9000, cursor: 'crosshair',
+        background: bgSnapshot ? `url(${bgSnapshot}) center/cover no-repeat` : '#000',
+      }}
     >
       <canvas
         id="__liquid_canvas__"

@@ -18,6 +18,7 @@ interface GolmokSignProps {
 export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
   const setPhase = onPhaseChange
   const [mounted, setMounted] = useState(false)
+  const [grassSnapshot, setGrassSnapshot] = useState<string | undefined>()
   const imgRef = useRef<HTMLImageElement>(null)
   const { gunState } = useGun()
 
@@ -32,7 +33,11 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
 
   const handleClick = () => {
     if (phase !== 'idle') return
-    // Go straight to liquid — GrassField stays visible underneath
+    // Capture current grass frame as background for LiquidOverlay
+    try {
+      const canvas = document.querySelector('#grass-field canvas') as HTMLCanvasElement | null
+      if (canvas) setGrassSnapshot(canvas.toDataURL('image/jpeg', 0.85))
+    } catch (_) {}
     setPhase('liquid')
   }
 
@@ -93,7 +98,7 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
 
       {/* ── Liquid overlay ───────────────────────────────────────────────────── */}
       {phase === 'liquid' && (
-        <LiquidOverlay onComplete={() => setPhase('transitioning')} />
+        <LiquidOverlay onComplete={() => setPhase('transitioning')} bgSnapshot={grassSnapshot} />
       )}
 
       {/* ── White cover — prevents flash of Landing between liquid and whiteroom ─ */}

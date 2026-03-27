@@ -299,6 +299,7 @@ function Scene() {
 export default function GrassField() {
   return (
     <div
+      id="grass-field"
       style={{
         position:      'absolute',
         bottom:        0,
@@ -311,11 +312,12 @@ export default function GrassField() {
     >
       <Canvas
         gl={{
-          alpha:               true,
-          antialias:           true,
-          powerPreference:     'high-performance',
-          toneMapping:         THREE.ACESFilmicToneMapping,
-          toneMappingExposure: 1.2,
+          alpha:                true,
+          antialias:            true,
+          powerPreference:      'high-performance',
+          toneMapping:          THREE.ACESFilmicToneMapping,
+          toneMappingExposure:  1.2,
+          preserveDrawingBuffer: true,
         }}
         camera={{ position: [0, 1.1, 3.2], fov: 64 }}
         style={{ background: 'transparent' }}
