@@ -199,7 +199,7 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
         aria-hidden="true"
         style={{
           position:      'absolute',
-          bottom:        'clamp(72px, 12vh, 120px)',
+          top:           'clamp(20px, 3vh, 36px)',
           left:          '50%',
           transform:     'translateX(-50%)',
           fontFamily:    "'Helvetica Neue', Helvetica, sans-serif",

@@ -153,16 +153,24 @@ export default function LiquidOverlay({ onComplete }: Props) {
     }
   }, [])
 
-  // Show volume hint after 2.5 s delay
+  // Volume hint: visible immediately, fades out after ~2 s
   useEffect(() => {
-    const t = setTimeout(() => {
+    // Fade in quickly on mount
+    const tIn = setTimeout(() => {
       if (volRef.current) {
-        volRef.current.style.transition = 'opacity 1.4s ease'
+        volRef.current.style.transition = 'opacity 0.4s ease'
         volRef.current.style.opacity    = '1'
         volShown.current = true
       }
-    }, 2500)
-    return () => clearTimeout(t)
+    }, 80)
+    // Auto fade-out after 2.2 s
+    const tOut = setTimeout(() => {
+      if (volRef.current) {
+        volRef.current.style.transition = 'opacity 1.0s ease'
+        volRef.current.style.opacity    = '0'
+      }
+    }, 2200)
+    return () => { clearTimeout(tIn); clearTimeout(tOut) }
   }, [])
 
   const addStir = (delta: number) => {
