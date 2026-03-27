@@ -38,9 +38,11 @@ function Display() {
     const box   = boxSrc.clone(true)
     const phone = phoneSrc.clone(true)
 
-    // Whiten box material
+    // Whiten box material + enable shadows
     box.traverse(c => {
       if (c instanceof THREE.Mesh) {
+        c.castShadow    = true
+        c.receiveShadow = true
         if (c.material) {
           const m = (Array.isArray(c.material) ? c.material[0] : c.material) as THREE.MeshStandardMaterial
           if (m.isMeshStandardMaterial) {
@@ -55,6 +57,8 @@ function Display() {
 
     phone.traverse(c => {
       if (c instanceof THREE.Mesh) {
+        c.castShadow    = true
+        c.receiveShadow = true
       }
     })
 
@@ -106,7 +110,8 @@ export default function WhiteRoomScene({ onClose }: Props) {
       }}
     >
       <Canvas
-        camera={{ position: [0, 3.2, 4.2], fov: 42 }}
+        camera={{ position: [0, 2.8, 2.6], fov: 38 }}
+        shadows
         gl={{
           antialias:           true,
           toneMapping:         THREE.ACESFilmicToneMapping,
@@ -115,14 +120,20 @@ export default function WhiteRoomScene({ onClose }: Props) {
         }}
         style={{ display: 'block', width: '100%', height: '100%' }}
       >
-        {/* Bright studio lighting — no shadows to save GPU */}
-        <ambientLight intensity={3} color="#ffffff" />
-        <directionalLight position={[4, 10, 6]}  intensity={3.5} />
+        <ambientLight intensity={2.5} color="#ffffff" />
+        <directionalLight position={[4, 10, 6]} intensity={3.5}
+          castShadow
+          shadow-mapSize-width={1024} shadow-mapSize-height={1024}
+          shadow-camera-near={0.5} shadow-camera-far={30}
+          shadow-camera-left={-4} shadow-camera-right={4}
+          shadow-camera-top={4} shadow-camera-bottom={-4}
+          shadow-bias={-0.002}
+        />
         <directionalLight position={[-5, 6, -4]} intensity={2}   color="#e8eeff" />
         <directionalLight position={[0, -3, 4]}  intensity={0.8} color="#fff8f0" />
 
         {/* Ground plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
           <planeGeometry args={[20, 20]} />
           <meshStandardMaterial color="#f5f5f3" roughness={0.9} />
         </mesh>
