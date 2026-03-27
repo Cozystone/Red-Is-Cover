@@ -29,7 +29,7 @@ function fitObject(obj: THREE.Object3D, targetSize: number): number {
   return box2.max.y - box2.min.y // return height after fitting
 }
 
-function Display() {
+function Display({ onPhoneClick }: { onPhoneClick: () => void }) {
   const { scene: boxSrc }   = useGLTF('/box_white.glb')
   const { scene: phoneSrc } = useGLTF('/vintage_telephone.glb')
   const groupRef = useRef<THREE.Group>(null)
@@ -79,7 +79,10 @@ function Display() {
   return (
     <group ref={groupRef} position={[0, -0.6, 0]}>
       <primitive object={boxMesh} />
-      <primitive object={phoneObj} />
+      <primitive object={phoneObj} onClick={onPhoneClick}
+        onPointerEnter={() => { document.body.style.cursor = 'pointer' }}
+        onPointerLeave={() => { document.body.style.cursor = '' }}
+      />
     </group>
   )
 }
@@ -88,9 +91,26 @@ function Display() {
 
 interface Props {
   onClose: () => void
+  onPhoneClick: () => void
 }
 
-export default function WhiteRoomScene({ onClose }: Props) {
+export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
+  // Phone ring audio — loop until phone clicked
+  useEffect(() => {
+    const ring = new Audio('/phone-ring.mp3')
+    ring.loop = true
+    ring.volume = 0.7
+    ring.play().catch(() => {})
+    return () => { ring.pause(); ring.src = '' }
+  }, [])
+
+  const handlePhoneClick = () => {
+    const pickup = new Audio('/phone-pickup.mp3')
+    pickup.volume = 1.0
+    pickup.play().catch(() => {})
+    onPhoneClick()
+  }
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
@@ -135,14 +155,14 @@ export default function WhiteRoomScene({ onClose }: Props) {
         {/* Rim light from below-front */}
         <directionalLight position={[0, -2, 5]}  intensity={0.6} color="#fff5e8" />
 
-        {/* Ground plane */}
-        <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+        {/* Ground plane — shifted to match group offset */}
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
           <planeGeometry args={[20, 20]} />
           <meshStandardMaterial color="#f5f5f3" roughness={0.9} />
         </mesh>
 
         <Suspense fallback={null}>
-          <Display />
+          <Display onPhoneClick={handlePhoneClick} />
         </Suspense>
       </Canvas>
 

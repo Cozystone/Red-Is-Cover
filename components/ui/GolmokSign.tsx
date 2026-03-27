@@ -7,8 +7,9 @@ import { useGun } from '@/lib/gunContext'
 
 const LiquidOverlay  = dynamic(() => import('@/components/ui/LiquidOverlay'),  { ssr: false })
 const WhiteRoomScene = dynamic(() => import('@/components/ui/WhiteRoomScene'), { ssr: false })
+const PhoneCallScene = dynamic(() => import('@/components/ui/PhoneCallScene'), { ssr: false })
 
-type GolmokPhase = 'idle' | 'clearing' | 'liquid' | 'transitioning' | 'whiteroom'
+type GolmokPhase = 'idle' | 'clearing' | 'liquid' | 'transitioning' | 'whiteroom' | 'phonecall'
 
 interface GolmokSignProps {
   phase: GolmokPhase
@@ -21,13 +22,12 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
   const imgRef = useRef<HTMLImageElement>(null)
   const { gunState } = useGun()
 
-  // Only show click target when Landing is actually visible
   const isRevealed = gunState === 'revealed'
 
   useEffect(() => {
     setMounted(true)
-    // Preload WhiteRoomScene so it renders instantly when phase becomes 'whiteroom'
     import('@/components/ui/WhiteRoomScene')
+    import('@/components/ui/PhoneCallScene')
   }, [])
 
   const handleClick = () => {
@@ -45,7 +45,7 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
 
   return (
     <>
-      {/* ── Sign image — purely visual, pointerEvents none ──────────────────── */}
+      {/* ── Sign image ──────────────────────────────────────────────────────── */}
       <div
         style={{
           position:      'absolute',
@@ -60,50 +60,47 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
           ref={imgRef}
           src="/golmok-sign.png"
           alt="골목길"
-          style={{
-            width:      'clamp(72px, 8.5vw, 118px)',
-            height:     'auto',
-            display:    'block',
-            transition: 'filter 0.2s',
-          }}
+          style={{ width: 'clamp(72px, 8.5vw, 118px)', height: 'auto', display: 'block', transition: 'filter 0.2s' }}
         />
       </div>
 
-      {/* ── Portal click target — position:fixed, above all stacking contexts ─ */}
-      {/* zIndex 700: above GunOverlay (610), below LiquidOverlay (9000)         */}
+      {/* ── Portal click target ─────────────────────────────────────────────── */}
       {mounted && isRevealed && phase === 'idle' && createPortal(
         <div
           onClick={handleClick}
           onMouseEnter={handleHoverIn}
           onMouseLeave={handleHoverOut}
           style={{
-            position:        'fixed',
-            right:           'clamp(22%, 29vw, 38%)',
-            bottom:          'clamp(158px, 28vh, 300px)',
-            zIndex:          700,
-            width:           'clamp(112px, 13vw, 198px)',
-            height:          'clamp(140px, 22vh, 260px)',
-            cursor:          'pointer',
-            backgroundColor: 'transparent',
+            position: 'fixed', right: 'clamp(22%, 29vw, 38%)', bottom: 'clamp(158px, 28vh, 300px)',
+            zIndex: 700, width: 'clamp(112px, 13vw, 198px)', height: 'clamp(140px, 22vh, 260px)',
+            cursor: 'pointer', backgroundColor: 'transparent',
           }}
         />,
         document.body
       )}
 
-      {/* ── Liquid overlay ───────────────────────────────────────────────────── */}
+      {/* ── Liquid overlay ──────────────────────────────────────────────────── */}
       {phase === 'liquid' && (
         <LiquidOverlay onComplete={() => setPhase('transitioning')} />
       )}
 
-      {/* ── White cover — prevents flash of Landing between liquid and whiteroom ─ */}
-      {mounted && phase === 'whiteroom' && createPortal(
+      {/* ── White cover (prevents flash between phases) ──────────────────── */}
+      {mounted && (phase === 'whiteroom' || phase === 'phonecall') && createPortal(
         <div style={{ position: 'fixed', inset: 0, background: '#f8f8f6', zIndex: 9000 }} />,
         document.body
       )}
 
-      {/* ── White room ───────────────────────────────────────────────────────── */}
+      {/* ── White room ──────────────────────────────────────────────────────── */}
       {phase === 'whiteroom' && (
-        <WhiteRoomScene onClose={() => setPhase('idle')} />
+        <WhiteRoomScene
+          onClose={() => setPhase('idle')}
+          onPhoneClick={() => setPhase('phonecall')}
+        />
+      )}
+
+      {/* ── Phone call scene ────────────────────────────────────────────────── */}
+      {phase === 'phonecall' && (
+        <PhoneCallScene onClose={() => setPhase('idle')} />
       )}
     </>
   )

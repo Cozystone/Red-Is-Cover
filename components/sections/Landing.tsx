@@ -8,7 +8,7 @@ import GrassField from '@/components/ui/GrassField'
 import GolmokSign from '@/components/ui/GolmokSign'
 import { useGun } from '@/lib/gunContext'
 
-type GolmokPhase = 'idle' | 'clearing' | 'liquid' | 'transitioning' | 'whiteroom'
+type GolmokPhase = 'idle' | 'clearing' | 'liquid' | 'transitioning' | 'whiteroom' | 'phonecall'
 
 export default function Landing() {
   const { curtainOpen } = useGun()
