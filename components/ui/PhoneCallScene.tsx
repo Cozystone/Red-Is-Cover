@@ -133,10 +133,22 @@ function CameraModel() {
   const obj = useMemo(() => {
     const cloned = scene.clone(true)
 
-    // Enable shadows + cast-shadow on all meshes
+    // Fix materials: opaque exterior only, no see-through
     cloned.traverse(c => {
       if (c instanceof THREE.Mesh) {
         c.castShadow = c.receiveShadow = true
+        const mats = Array.isArray(c.material) ? c.material : [c.material]
+        mats.forEach((m, idx) => {
+          const mat = (m as THREE.MeshStandardMaterial).clone()
+          mat.side        = THREE.FrontSide
+          mat.transparent = false
+          mat.opacity     = 1
+          mat.depthWrite  = true
+          mat.alphaTest   = 0
+          mat.needsUpdate = true
+          if (Array.isArray(c.material)) (c.material as THREE.Material[])[idx] = mat
+          else c.material = mat
+        })
       }
     })
 
@@ -224,9 +236,14 @@ export default function PhoneCallScene({ onClose }: Props) {
         pointerEvents:  'none',
       }}>
         <div style={{
-          width:         'min(60vw, 64vh)',
-          height:        'min(54vw, 58vh)',
-          pointerEvents: 'auto',
+          width:              'min(60vw, 64vh)',
+          height:             'min(54vw, 58vh)',
+          pointerEvents:      'auto',
+          backgroundImage:    'url(/seoul-night.jpg)',
+          backgroundSize:     'cover',
+          backgroundPosition: 'center',
+          borderRadius:       '2px',
+          overflow:           'hidden',
         }}>
           <Canvas
             camera={{ position: [0, 0.15, 3.0], fov: 40 }}
