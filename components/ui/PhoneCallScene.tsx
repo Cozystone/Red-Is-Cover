@@ -450,7 +450,7 @@ export default function PhoneCallScene({ onClose }: Props) {
           }}
         >
           <Canvas
-            camera={{ position: [0, 0.15, 3.0], fov: 40 }}
+            camera={{ position: [-0.9, 0.15, 2.85], fov: 40 }}
             gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
             style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
           >
