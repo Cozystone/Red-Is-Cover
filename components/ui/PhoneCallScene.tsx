@@ -191,7 +191,7 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
     if (!el) return
     const onWheel = (e: WheelEvent) => {
       e.preventDefault()
-      const next = Math.max(0.85, Math.min(3.0, zoomRef.current - e.deltaY * 0.0008))
+      const next = Math.max(0.85, Math.min(3.0, zoomRef.current - e.deltaY * 0.002))
       onZoomChange(next)
     }
     el.addEventListener('wheel', onWheel, { passive: false })
@@ -200,8 +200,8 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
 
   // Cursor-position panning (no drag needed)
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const cx = (e.clientX / window.innerWidth  - 0.5) * -340
-    const cy = (e.clientY / window.innerHeight - 0.5) * -230
+    const cx = (e.clientX / window.innerWidth  - 0.5) * -560
+    const cy = (e.clientY / window.innerHeight - 0.5) * -380
     setPan({ x: cx, y: cy })
   }
 
