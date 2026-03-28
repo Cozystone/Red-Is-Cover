@@ -1,45 +1,42 @@
 'use client'
 
-/* PhoneCallScene — full-screen Seoul night bg + sign collage + Canon AT-1.
-   Click camera (no drag) → viewfinder mode (iris expand).
-   Cursor pans viewfinder; scroll zooms.  ESC/close → hang-up sound. */
+/* PhoneCallScene — Seoul night bg + sign collage + Canon AT-1.
+   Click camera → turning mode (camera swings to show back) → iris viewfinder.
+   Cursor pans · scroll zooms (zoom-click.wav) · Enter captures (shutter.mp3).
+   ESC exits viewfinder → camera resets → back to normal.
+   Captured photo passed to onClose for polaroid display. */
 
 import { useEffect, useRef, useState, useMemo, Suspense, useCallback } from 'react'
 import { createPortal } from 'react-dom'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useGLTF, OrbitControls, Environment, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
+
+export interface CapturedPhoto {
+  zoom: number
+  pan: { x: number; y: number }
+}
 
 // ── Sign assets ───────────────────────────────────────────────────────────────
 
 const SIGN_SRCS = [
-  '/signs/20260327_232611.png',
-  '/signs/20260327_232635.png',
-  '/signs/20260327_232646.png',
-  '/signs/20260327_232651.png',
-  '/signs/20260327_232657.png',
-  '/signs/20260327_232705.png',
-  '/signs/20260327_232711.png',
-  '/signs/20260327_234007.png',
-  '/signs/20260327_234019.png',
-  '/signs/20260327_234028.png',
-  '/signs/20260327_234037.png',
-  '/signs/20260327_234046.png',
-  '/signs/20260327_234055.png',
-  '/signs/20260327_234105.png',
-  '/signs/20260327_234115.png',
-  '/signs/20260327_234123.png',
-  '/signs/20260328_013408.png',
-  '/signs/20260328_013416.png',
-  '/signs/20260328_013422.png',
-  '/signs/20260328_013429.png',
+  '/signs/20260327_232611.png', '/signs/20260327_232635.png',
+  '/signs/20260327_232646.png', '/signs/20260327_232651.png',
+  '/signs/20260327_232657.png', '/signs/20260327_232705.png',
+  '/signs/20260327_232711.png', '/signs/20260327_234007.png',
+  '/signs/20260327_234019.png', '/signs/20260327_234028.png',
+  '/signs/20260327_234037.png', '/signs/20260327_234046.png',
+  '/signs/20260327_234055.png', '/signs/20260327_234105.png',
+  '/signs/20260327_234115.png', '/signs/20260327_234123.png',
+  '/signs/20260328_013408.png', '/signs/20260328_013416.png',
+  '/signs/20260328_013422.png', '/signs/20260328_013429.png',
 ]
 
 useGLTF.preload('/canon_camera.glb')
 
 // ── Types / helpers ───────────────────────────────────────────────────────────
 
-type Mode = 'normal' | 'viewfinder'
+type Mode = 'normal' | 'turning' | 'viewfinder' | 'resetting'
 
 interface SignDef {
   id: number; src: string
@@ -70,7 +67,7 @@ function makeRandomDef(id: number): SignDef {
 
 function SignItem({ def, delay }: { def: SignDef; delay: number }) {
   const [current, setCurrent] = useState(def)
-  const [visible,  setVisible]  = useState(false)
+  const [visible,  setVisible] = useState(false)
   const mounted = useRef(false)
 
   useEffect(() => {
@@ -113,8 +110,6 @@ function CameraModel({
 
   const obj = useMemo(() => {
     const cloned = scene.clone(true)
-
-    // Configure texture for viewfinder screen display
     seoulTex.wrapS = seoulTex.wrapT = THREE.ClampToEdgeWrapping
     seoulTex.minFilter = THREE.LinearFilter
     seoulTex.needsUpdate = true
@@ -128,18 +123,27 @@ function CameraModel({
           mat.side = THREE.FrontSide
           mat.transparent = false; mat.opacity = 1
           mat.depthWrite = true; mat.alphaTest = 0
-
-          // Detect green-ish viewfinder screen mesh → apply seoul-night texture
           const col = mat.color
           if (col && col.g > col.r * 1.3 && col.g > col.b * 1.2 && col.g > 0.08) {
-            mat.map = seoulTex
-            mat.color.set(0xffffff)
-            mat.roughness = 0.75
-            mat.metalness = 0.0
-            mat.emissive = new THREE.Color(0x050a08)
-            mat.emissiveIntensity = 1
+            // Distinguish front lens (large) vs viewfinder eyepiece (small) by geometry volume
+            let vol = 0
+            if (c.geometry) {
+              c.geometry.computeBoundingBox()
+              const bb = c.geometry.boundingBox!
+              const s  = bb.getSize(new THREE.Vector3())
+              vol = s.x * s.y * s.z
+            }
+            if (vol > 0.008) {
+              // Front lens glass → deep reflective black
+              mat.color.set(0x020204)
+              mat.roughness = 0.04; mat.metalness = 0.10
+            } else {
+              // Viewfinder eyepiece → seoul-night mini screen
+              mat.map = seoulTex; mat.color.set(0xffffff)
+              mat.roughness = 0.75; mat.metalness = 0
+              mat.emissive = new THREE.Color(0x050a08); mat.emissiveIntensity = 1
+            }
           }
-
           mat.needsUpdate = true
           if (Array.isArray(c.material)) (c.material as THREE.Material[])[idx] = mat
           else c.material = mat
@@ -154,13 +158,11 @@ function CameraModel({
     cloned.updateMatrixWorld(true)
     const box2 = new THREE.Box3().setFromObject(cloned)
     cloned.position.sub(box2.getCenter(new THREE.Vector3()))
-
     return cloned
   }, [scene, seoulTex])
 
   return (
-    <primitive
-      object={obj}
+    <primitive object={obj}
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       onClick={(e: any) => {
         if (!isDraggingRef.current) { e.stopPropagation(); onCameraClick() }
@@ -171,21 +173,75 @@ function CameraModel({
   )
 }
 
+// ── Camera animator (inside Canvas) ──────────────────────────────────────────
+
+const HOME = new THREE.Vector3(0, 0.15, 2.85)
+const BACK = new THREE.Vector3(0.1, 1.4, -0.5)
+
+function CameraAnimator({
+  mode,
+  onTurnDone,
+  onResetDone,
+}: {
+  mode: Mode
+  onTurnDone: () => void
+  onResetDone: () => void
+}) {
+  const { camera } = useThree()
+  const doneRef       = useRef(false)
+  const onTurnRef     = useRef(onTurnDone)
+  const onResetRef    = useRef(onResetDone)
+  onTurnRef.current   = onTurnDone
+  onResetRef.current  = onResetDone
+
+  useFrame(() => {
+    if (mode === 'normal') return   // OrbitControls owns the camera
+
+    if (mode === 'turning') {
+      if (doneRef.current) return
+      camera.position.lerp(BACK, 0.045)
+      camera.lookAt(0, 0.1, 0)
+      if (camera.position.distanceTo(BACK) < 0.12) {
+        doneRef.current = true
+        setTimeout(() => onTurnRef.current(), 220)
+      }
+    } else {
+      // 'viewfinder' | 'resetting' — reset to home (canvas is hidden)
+      doneRef.current = false
+      if (camera.position.distanceTo(HOME) > 0.05) {
+        camera.position.lerp(HOME, 0.12)
+        camera.lookAt(0, 0.1, 0)
+      } else if (mode === 'resetting') {
+        onResetRef.current()
+      }
+    }
+  })
+
+  return null
+}
+
 // ── Viewfinder overlay ────────────────────────────────────────────────────────
 
 interface VFProps {
   zoom: number
   onZoomChange: (z: number) => void
   onExit: () => void
+  onCapture: (data: CapturedPhoto) => void
 }
 
-function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
-  const outerRef = useRef<HTMLDivElement>(null)
-  const [pan, setPan] = useState({ x: 0, y: 0 })
-  const zoomRef = useRef(zoom)
-  useEffect(() => { zoomRef.current = zoom }, [zoom])
+function ViewfinderOverlay({ zoom, onZoomChange, onExit, onCapture }: VFProps) {
+  const outerRef        = useRef<HTMLDivElement>(null)
+  const [pan, setPan]   = useState({ x: 0, y: 0 })
+  const [flashing, setFlashing] = useState(false)
+  const zoomRef         = useRef(zoom)
+  const panRef          = useRef(pan)
+  const capturedRef     = useRef(false)
+  const lastZoomSndRef  = useRef(0)
 
-  // Scroll-to-zoom (non-passive to allow preventDefault)
+  useEffect(() => { zoomRef.current = zoom },  [zoom])
+  useEffect(() => { panRef.current  = pan  },  [pan])
+
+  // Scroll zoom + zoom sound
   useEffect(() => {
     const el = outerRef.current
     if (!el) return
@@ -193,12 +249,31 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
       e.preventDefault()
       const next = Math.max(0.85, Math.min(3.0, zoomRef.current - e.deltaY * 0.002))
       onZoomChange(next)
+      const now = Date.now()
+      if (now - lastZoomSndRef.current > 180) {
+        lastZoomSndRef.current = now
+        const snd = new Audio('/zoom-click.wav')
+        snd.volume = 0.3; snd.play().catch(() => {})
+      }
     }
     el.addEventListener('wheel', onWheel, { passive: false })
     return () => el.removeEventListener('wheel', onWheel)
   }, [onZoomChange])
 
-  // Cursor-position panning (no drag needed)
+  // Enter key → capture
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || capturedRef.current) return
+      capturedRef.current = true
+      setFlashing(true)
+      const snd = new Audio('/shutter.mp3')
+      snd.volume = 1.0; snd.play().catch(() => {})
+      setTimeout(() => onCapture({ zoom: zoomRef.current, pan: panRef.current }), 350)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onCapture])
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const cx = (e.clientX / window.innerWidth  - 0.5) * -560
     const cy = (e.clientY / window.innerHeight - 0.5) * -380
@@ -217,6 +292,16 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
         animation: 'vfIris 0.55s cubic-bezier(0.22,1,0.36,1) forwards',
       }}
     >
+      {/* Shutter flash */}
+      {flashing && (
+        <div aria-hidden="true" style={{
+          position: 'absolute', inset: 0, zIndex: 100,
+          background: '#fff',
+          animation: 'shutterFlash 0.55s ease-out forwards',
+          pointerEvents: 'none',
+        }} />
+      )}
+
       {/* Radial vignette */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
@@ -225,51 +310,41 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
 
       {/* Viewfinder housing */}
       <div style={{
-        position: 'relative',
-        padding: '14px 14px 20px',
+        position: 'relative', padding: '14px 14px 20px',
         background: 'linear-gradient(180deg,#1c1916 0%,#110e0c 100%)',
         borderRadius: '4px',
         boxShadow: '0 0 0 1px rgba(255,180,60,0.07), 0 0 0 5px rgba(0,0,0,0.6), 0 30px 90px rgba(0,0,0,0.92)',
       }}>
         {/* Eyepiece rubber ring */}
         <div style={{
-          position: 'absolute', top: 0, left: '50%',
-          transform: 'translate(-50%,-55%)',
+          position: 'absolute', top: 0, left: '50%', transform: 'translate(-50%,-55%)',
           width: '44px', height: '14px',
           background: 'radial-gradient(ellipse,#2e2a27 0%,#1a1714 100%)',
-          borderRadius: '50%',
-          boxShadow: '0 0 0 1px rgba(255,255,255,0.05)',
+          borderRadius: '50%', boxShadow: '0 0 0 1px rgba(255,255,255,0.05)',
         }} />
 
         {/* Viewport */}
         <div style={{
-          width: 'min(68vw, calc(64vh * 1.47))',
-          aspectRatio: '1.47',
-          overflow: 'hidden',
-          position: 'relative',
-          border: '1px solid rgba(255,180,60,0.1)',
-          borderRadius: '1px',
+          width: 'min(68vw, calc(64vh * 1.47))', aspectRatio: '1.47',
+          overflow: 'hidden', position: 'relative',
+          border: '1px solid rgba(255,180,60,0.1)', borderRadius: '1px',
         }}>
-          {/* Seoul night — digital camera night-shot treatment */}
+          {/* Seoul night — digital night shot */}
           <div style={{
-            position: 'absolute',
-            top: '-45%', left: '-45%', right: '-45%', bottom: '-45%',
-            backgroundImage: 'url(/seoul-night.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            position: 'absolute', top: '-45%', left: '-45%', right: '-45%', bottom: '-45%',
+            backgroundImage: 'url(/seoul-night.jpg)', backgroundSize: 'cover', backgroundPosition: 'center',
             transform: `scale(${zoom}) translate(${pan.x / zoom}px, ${pan.y / zoom}px)`,
-            filter: 'brightness(0.62) contrast(1.22) saturate(1.6)',
-            willChange: 'transform',
+            filter: 'brightness(0.62) contrast(1.22) saturate(1.6)', willChange: 'transform',
           }} />
 
-          {/* Digital noise (high-ISO look) */}
+          {/* Digital noise */}
           <div style={{
             position: 'absolute', inset: 0, pointerEvents: 'none',
             backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.92' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)' opacity='0.18'/%3E%3C/svg%3E")`,
             opacity: 0.85, mixBlendMode: 'overlay',
           }} />
 
-          {/* Chromatic fringe on edges (digital lens look) */}
+          {/* Chromatic fringe */}
           <div style={{
             position: 'absolute', inset: 0, pointerEvents: 'none',
             background: 'radial-gradient(ellipse at center, transparent 55%, rgba(255,80,20,0.06) 80%, rgba(20,60,255,0.07) 100%)',
@@ -281,28 +356,21 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
             background: 'radial-gradient(ellipse at center, transparent 45%, rgba(0,0,0,0.55) 100%)',
           }} />
 
-          {/* AF / exposure overlay markings */}
-          <svg
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
-            viewBox="0 0 300 204" preserveAspectRatio="none"
-          >
-            {/* AF rectangle */}
-            <rect x="126" y="86" width="48" height="32" fill="none"
-              stroke="rgba(255,200,60,0.45)" strokeWidth="0.8"/>
-            {/* Focus dots */}
+          {/* AF markings */}
+          <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}
+            viewBox="0 0 300 204" preserveAspectRatio="none">
+            <rect x="126" y="86" width="48" height="32" fill="none" stroke="rgba(255,200,60,0.45)" strokeWidth="0.8"/>
             <circle cx="90"  cy="102" r="1.2" fill="rgba(255,200,60,0.22)"/>
             <circle cx="210" cy="102" r="1.2" fill="rgba(255,200,60,0.22)"/>
-            {/* Corner brackets */}
-            <path d="M40,42 L40,66 M40,42 L64,42"   fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
+            <path d="M40,42 L40,66 M40,42 L64,42"    fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
             <path d="M260,42 L260,66 M260,42 L236,42" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
-            <path d="M40,162 L40,138 M40,162 L64,162"   fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
+            <path d="M40,162 L40,138 M40,162 L64,162"    fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
             <path d="M260,162 L260,138 M260,162 L236,162" fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="0.7"/>
-            {/* Horizontal rule */}
             <line x1="120" y1="102" x2="180" y2="102" stroke="rgba(255,200,60,0.15)" strokeWidth="0.5"/>
           </svg>
         </div>
 
-        {/* Info strip — camera HUD */}
+        {/* Info strip */}
         <div style={{
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           marginTop: '9px', paddingLeft: '4px', paddingRight: '4px',
@@ -316,34 +384,41 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
       {/* Zoom indicator */}
       {zoom !== 1.0 && (
         <div style={{
-          position: 'absolute', bottom: 'clamp(52px,8vh,80px)',
-          left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', bottom: 'clamp(56px,9vh,88px)', left: '50%', transform: 'translateX(-50%)',
           fontFamily: 'monospace', fontSize: '8px', letterSpacing: '0.18em',
           color: 'rgba(255,180,60,0.38)', whiteSpace: 'nowrap', pointerEvents: 'none',
-        }}>
-          {zoom.toFixed(1)}×
-        </div>
+        }}>{zoom.toFixed(1)}×</div>
       )}
 
+      {/* Capture hint */}
+      <div style={{
+        position: 'absolute', bottom: 'clamp(40px,6.5vh,66px)', left: '50%', transform: 'translateX(-50%)',
+        fontFamily: "'Helvetica Neue',sans-serif", fontSize: '8px', letterSpacing: '0.28em',
+        textTransform: 'uppercase', color: 'rgba(255,200,60,0.5)',
+        whiteSpace: 'nowrap', pointerEvents: 'none',
+        animation: 'captureHint 2.5s ease-in-out infinite',
+      }}>↵ &nbsp;CAPTURE</div>
+
       {/* Exit hint */}
-      <div
-        onClick={e => { e.stopPropagation(); onExit() }}
-        style={{
-          position: 'absolute', bottom: 'clamp(18px,3.5vh,44px)',
-          left: '50%', transform: 'translateX(-50%)',
-          fontFamily: "'Helvetica Neue',sans-serif", fontSize: '8px',
-          letterSpacing: '0.28em', textTransform: 'uppercase',
-          color: 'rgba(255,255,255,0.22)', cursor: 'pointer', whiteSpace: 'nowrap',
-          zIndex: 1,
-        }}
-      >
-        ESC · exit viewfinder
-      </div>
+      <div onClick={e => { e.stopPropagation(); onExit() }} style={{
+        position: 'absolute', bottom: 'clamp(18px,3.5vh,44px)', left: '50%', transform: 'translateX(-50%)',
+        fontFamily: "'Helvetica Neue',sans-serif", fontSize: '8px', letterSpacing: '0.28em',
+        textTransform: 'uppercase', color: 'rgba(255,255,255,0.22)', cursor: 'pointer', whiteSpace: 'nowrap', zIndex: 1,
+      }}>ESC · exit viewfinder</div>
 
       <style>{`
         @keyframes vfIris {
           from { clip-path: circle(0% at 50% 38%); }
           to   { clip-path: circle(160% at 50% 38%); }
+        }
+        @keyframes shutterFlash {
+          0%   { opacity: 0; }
+          8%   { opacity: 1; }
+          100% { opacity: 0; }
+        }
+        @keyframes captureHint {
+          0%, 100% { opacity: 0.35; }
+          50%       { opacity: 0.85; }
         }
       `}</style>
     </div>
@@ -352,7 +427,7 @@ function ViewfinderOverlay({ zoom, onZoomChange, onExit }: VFProps) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-interface Props { onClose: () => void }
+interface Props { onClose: (photo?: CapturedPhoto) => void }
 
 const TOTAL = 20
 
@@ -363,7 +438,6 @@ export default function PhoneCallScene({ onClose }: Props) {
   )
   const [zoom, setZoom] = useState(1.0)
 
-  // Drag-detection refs (canvas level)
   const isDraggingRef = useRef(false)
   const ptrDownPos    = useRef({ x: 0, y: 0 })
 
@@ -375,11 +449,9 @@ export default function PhoneCallScene({ onClose }: Props) {
     return () => { music.pause(); music.src = '' }
   }, [])
 
-  // ── Close with hang-up sound ──
   const handleClose = useCallback(() => {
     const snd = new Audio('/phone-hangup.mp3')
-    snd.volume = 1.0
-    snd.play().catch(() => {})
+    snd.volume = 1.0; snd.play().catch(() => {})
     onClose()
   }, [onClose])
 
@@ -387,8 +459,8 @@ export default function PhoneCallScene({ onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
-      if (mode === 'viewfinder') setMode('normal')
-      else handleClose()
+      if (mode === 'viewfinder') setMode('resetting')
+      else if (mode === 'normal') handleClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -408,16 +480,24 @@ export default function PhoneCallScene({ onClose }: Props) {
   }, [])
 
   const enterViewfinder = useCallback(() => {
-    setMode('viewfinder')
+    setMode('turning')
     setZoom(1.0)
   }, [])
+
+  const handleTurnDone  = useCallback(() => setMode('viewfinder'), [])
+  const handleResetDone = useCallback(() => setMode('normal'),     [])
+
+  const handleCapture = useCallback((data: CapturedPhoto) => {
+    onClose(data)
+  }, [onClose])
+
+  const canvasHidden = mode === 'viewfinder' || mode === 'resetting'
 
   return createPortal(
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9002,
       background: "url('/seoul-night.jpg') center/cover no-repeat",
-      animation: 'pcFadeIn 0.8s ease-out forwards',
-      overflow: 'hidden',
+      animation: 'pcFadeIn 0.8s ease-out forwards', overflow: 'hidden',
     }}>
 
       {/* ── Sign collage ────────────────────────────────────────────── */}
@@ -427,7 +507,7 @@ export default function PhoneCallScene({ onClose }: Props) {
         ))}
       </div>
 
-      {/* ── 3D camera (transparent canvas over bg) ──────────────────── */}
+      {/* ── 3D camera ───────────────────────────────────────────────── */}
       <div style={{
         position: 'absolute', inset: 0,
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -436,9 +516,9 @@ export default function PhoneCallScene({ onClose }: Props) {
         <div
           style={{
             width: 'min(60vw, 64vh)', height: 'min(54vw, 58vh)',
-            pointerEvents: mode === 'viewfinder' ? 'none' : 'auto',
-            opacity: mode === 'viewfinder' ? 0 : 1,
-            transition: 'opacity 0.4s ease',
+            pointerEvents: mode === 'normal' ? 'auto' : 'none',
+            opacity: canvasHidden ? 0 : 1,
+            transition: 'opacity 0.45s ease',
           }}
           onPointerDown={e => {
             isDraggingRef.current = false
@@ -450,7 +530,7 @@ export default function PhoneCallScene({ onClose }: Props) {
           }}
         >
           <Canvas
-            camera={{ position: [-0.9, 0.15, 2.85], fov: 40 }}
+            camera={{ position: [0, 0.15, 2.85], fov: 40 }}
             gl={{ antialias: true, alpha: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.1 }}
             style={{ display: 'block', width: '100%', height: '100%', background: 'transparent' }}
           >
@@ -459,18 +539,24 @@ export default function PhoneCallScene({ onClose }: Props) {
             <directionalLight position={[5, 2, -4]}  intensity={1.3} color="#d0e4ff" />
             <directionalLight position={[0, -2, 3]}  intensity={0.5} />
 
+            <CameraAnimator
+              mode={mode}
+              onTurnDone={handleTurnDone}
+              onResetDone={handleResetDone}
+            />
+
             <Suspense fallback={null}>
               <CameraModel onCameraClick={enterViewfinder} isDraggingRef={isDraggingRef} />
               <Environment preset="studio" />
             </Suspense>
 
-            <OrbitControls
-              autoRotate={mode === 'normal'}
-              autoRotateSpeed={1.4}
-              enableZoom={false} enablePan={false}
-              minPolarAngle={Math.PI / 5}
-              maxPolarAngle={Math.PI * 4 / 5}
-            />
+            {mode === 'normal' && (
+              <OrbitControls
+                autoRotate autoRotateSpeed={1.4}
+                enableZoom={false} enablePan={false}
+                minPolarAngle={Math.PI / 5} maxPolarAngle={Math.PI * 4 / 5}
+              />
+            )}
           </Canvas>
         </div>
       </div>
@@ -480,26 +566,23 @@ export default function PhoneCallScene({ onClose }: Props) {
         <ViewfinderOverlay
           zoom={zoom}
           onZoomChange={setZoom}
-          onExit={() => setMode('normal')}
+          onExit={() => setMode('resetting')}
+          onCapture={handleCapture}
         />
       )}
 
       {/* ── ESC / close (normal mode) ────────────────────────────────── */}
       {mode === 'normal' && (
-        <div
-          onClick={handleClose}
-          style={{
-            position: 'absolute', top: 'clamp(20px,3vh,36px)', right: 'clamp(20px,3vw,36px)',
-            fontFamily: "'Helvetica Neue',sans-serif", fontSize: '9px', fontWeight: 500,
-            letterSpacing: '0.28em', textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.42)', cursor: 'pointer', userSelect: 'none',
-            padding: '12px', zIndex: 1,
-          }}
+        <div onClick={handleClose} style={{
+          position: 'absolute', top: 'clamp(20px,3vh,36px)', right: 'clamp(20px,3vw,36px)',
+          fontFamily: "'Helvetica Neue',sans-serif", fontSize: '9px', fontWeight: 500,
+          letterSpacing: '0.28em', textTransform: 'uppercase',
+          color: 'rgba(255,255,255,0.42)', cursor: 'pointer', userSelect: 'none',
+          padding: '12px', zIndex: 1,
+        }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.85)' }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.42)' }}
-        >
-          ESC · Close
-        </div>
+        >ESC · Close</div>
       )}
 
       <style>{`@keyframes pcFadeIn { from { opacity:0 } to { opacity:1 } }`}</style>
