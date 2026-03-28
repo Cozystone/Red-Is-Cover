@@ -30,8 +30,10 @@ export default function LiquidOverlay({ onComplete }: Props) {
   })
 
   useEffect(() => {
-    const prev = document.body.style.overflow
+    const prev    = document.body.style.overflow
+    const scrollY = window.scrollY
     document.body.style.overflow = 'hidden'
+    document.body.style.top      = `-${scrollY}px`
 
     // ── Water simulation ─────────────────────────────────────────────────────
     const SIM_SCALE = 7   // 1 sim pixel = 7 screen pixels (~275×155 @ 1920×1080)
@@ -146,7 +148,9 @@ export default function LiquidOverlay({ onComplete }: Props) {
       clearTimeout(timer)
       cancelAnimationFrame(raf)
       addRippleRef.current = null
+      document.body.style.top      = ''
       document.body.style.overflow = prev
+      window.scrollTo(0, scrollY)
       const lnd = document.getElementById('landing')
       if (lnd) lnd.style.filter = ''
       document.getElementById('__liq_svg__')?.remove()

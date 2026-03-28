@@ -19,7 +19,7 @@ export default function VideoHero() {
   const { gunState, curtainOpen, openCurtain } = useGun()
   const revealed = gunState === 'revealed' || gunState === 'shattering'
 
-  const [wineMode, setWineMode] = useState(false)
+  const [wineMode, setWineMode] = useState(true)
 
   // ── Refs for gesture tracking ────────────────────────────────────────────────
   const touchStartX  = useRef<number | null>(null)
