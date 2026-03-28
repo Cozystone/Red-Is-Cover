@@ -114,6 +114,14 @@ function CameraModel({
     seoulTex.minFilter = THREE.LinearFilter
     seoulTex.needsUpdate = true
 
+    // Update world matrix so getWorldPosition works correctly during traversal
+    cloned.updateMatrixWorld(true)
+
+    // Get model vertical extent for normalising Y position
+    const modelBox = new THREE.Box3().setFromObject(cloned)
+    const modelMinY = modelBox.min.y
+    const modelH    = modelBox.max.y - modelBox.min.y || 1
+
     cloned.traverse(c => {
       if (c instanceof THREE.Mesh) {
         c.castShadow = c.receiveShadow = true
@@ -123,27 +131,35 @@ function CameraModel({
           mat.side = THREE.FrontSide
           mat.transparent = false; mat.opacity = 1
           mat.depthWrite = true; mat.alphaTest = 0
+
           const col = mat.color
-          if (col && col.g > col.r * 1.3 && col.g > col.b * 1.2 && col.g > 0.08) {
-            // Distinguish front lens (large) vs viewfinder eyepiece (small) by geometry volume
-            let vol = 0
-            if (c.geometry) {
-              c.geometry.computeBoundingBox()
-              const bb = c.geometry.boundingBox!
-              const s  = bb.getSize(new THREE.Vector3())
-              vol = s.x * s.y * s.z
-            }
-            if (vol > 0.008) {
-              // Front lens glass → deep reflective black
-              mat.color.set(0x020204)
-              mat.roughness = 0.04; mat.metalness = 0.10
-            } else {
-              // Viewfinder eyepiece → seoul-night mini screen
+          // Broader green detection: any mesh that is clearly more green than R and B
+          const isGreen = col &&
+            col.g > col.r + 0.04 &&
+            col.g > col.b + 0.04 &&
+            col.g > 0.06
+
+          if (isGreen) {
+            // Use world Y position to distinguish:
+            // viewfinder eyepiece = top ~25% of camera height
+            // front lens glass   = middle height
+            const wp = new THREE.Vector3()
+            c.getWorldPosition(wp)
+            const normY = (wp.y - modelMinY) / modelH   // 0 = bottom, 1 = top
+
+            if (normY > 0.72) {
+              // Viewfinder eyepiece (upper area) → seoul-night mini screen
               mat.map = seoulTex; mat.color.set(0xffffff)
               mat.roughness = 0.75; mat.metalness = 0
               mat.emissive = new THREE.Color(0x050a08); mat.emissiveIntensity = 1
+            } else {
+              // Front lens glass (center/lower) → deep reflective black
+              mat.map = null
+              mat.color.set(0x020204)
+              mat.roughness = 0.03; mat.metalness = 0.12
             }
           }
+
           mat.needsUpdate = true
           if (Array.isArray(c.material)) (c.material as THREE.Material[])[idx] = mat
           else c.material = mat
@@ -175,8 +191,11 @@ function CameraModel({
 
 // ── Camera animator (inside Canvas) ──────────────────────────────────────────
 
-const HOME = new THREE.Vector3(0, 0.15, 2.85)
-const BACK = new THREE.Vector3(0.1, 1.4, -0.5)
+// Spherical params for home position [0, 0.15, 2.85]
+const HOME_R     = Math.sqrt(0.15 * 0.15 + 2.85 * 2.85)   // ≈ 2.854
+const HOME_PHI   = Math.acos(0.15 / HOME_R)                // ≈ 1.518 (nearly horizontal)
+const HOME_THETA = 0                                        // front (+Z)
+const BACK_THETA = Math.PI                                  // back (-Z)
 
 function CameraAnimator({
   mode,
@@ -188,30 +207,41 @@ function CameraAnimator({
   onResetDone: () => void
 }) {
   const { camera } = useThree()
-  const doneRef       = useRef(false)
-  const onTurnRef     = useRef(onTurnDone)
-  const onResetRef    = useRef(onResetDone)
-  onTurnRef.current   = onTurnDone
-  onResetRef.current  = onResetDone
+  const doneRef      = useRef(false)
+  const onTurnRef    = useRef(onTurnDone)
+  const onResetRef   = useRef(onResetDone)
+  onTurnRef.current  = onTurnDone
+  onResetRef.current = onResetDone
 
   useFrame(() => {
     if (mode === 'normal') return   // OrbitControls owns the camera
 
+    // Express camera position in spherical coords so we orbit cleanly
+    const sph = new THREE.Spherical().setFromVector3(camera.position)
+
     if (mode === 'turning') {
       if (doneRef.current) return
-      camera.position.lerp(BACK, 0.045)
-      camera.lookAt(0, 0.1, 0)
-      if (camera.position.distanceTo(BACK) < 0.12) {
+      // Orbit around Y axis: swing theta from 0 → π (front → back via the right side)
+      sph.theta  = THREE.MathUtils.lerp(sph.theta,  BACK_THETA, 0.055)
+      sph.phi    = THREE.MathUtils.lerp(sph.phi,    HOME_PHI,   0.04)
+      sph.radius = THREE.MathUtils.lerp(sph.radius, HOME_R,     0.04)
+      camera.position.setFromSpherical(sph)
+      camera.lookAt(0, 0.15, 0)
+
+      if (Math.abs(sph.theta - BACK_THETA) < 0.06) {
         doneRef.current = true
-        setTimeout(() => onTurnRef.current(), 220)
+        setTimeout(() => onTurnRef.current(), 180)
       }
     } else {
-      // 'viewfinder' | 'resetting' — reset to home (canvas is hidden)
+      // 'viewfinder' | 'resetting' — orbit back home (canvas hidden, invisible)
       doneRef.current = false
-      if (camera.position.distanceTo(HOME) > 0.05) {
-        camera.position.lerp(HOME, 0.12)
-        camera.lookAt(0, 0.1, 0)
-      } else if (mode === 'resetting') {
+      sph.theta  = THREE.MathUtils.lerp(sph.theta,  HOME_THETA, 0.12)
+      sph.phi    = THREE.MathUtils.lerp(sph.phi,    HOME_PHI,   0.12)
+      sph.radius = THREE.MathUtils.lerp(sph.radius, HOME_R,     0.12)
+      camera.position.setFromSpherical(sph)
+      camera.lookAt(0, 0.15, 0)
+
+      if (mode === 'resetting' && Math.abs(sph.theta - HOME_THETA) < 0.08) {
         onResetRef.current()
       }
     }
