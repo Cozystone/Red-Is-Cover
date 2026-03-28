@@ -106,6 +106,13 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
     return () => { ring.pause(); ring.src = '' }
   }, [])
 
+  const handleClose = () => {
+    const snd = new Audio('/phone-hangup.mp3')
+    snd.volume = 1.0
+    snd.play().catch(() => {})
+    onClose()
+  }
+
   const handlePhoneClick = () => {
     const pickup = new Audio('/phone-pickup.mp3')
     pickup.volume = 1.0
@@ -116,11 +123,11 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') handleClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return createPortal(
     <div
@@ -172,7 +179,7 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
 
       {/* ESC / close hint */}
       <div
-        onClick={onClose}
+        onClick={handleClose}
         style={{
           position:      'absolute',
           top:           'clamp(20px, 3vh, 36px)',
@@ -203,11 +210,11 @@ export default function WhiteRoomScene({ onClose, onPhoneClick }: Props) {
           left:          '50%',
           transform:     'translateX(-50%)',
           fontFamily:    "'Helvetica Neue', Helvetica, sans-serif",
-          fontSize:      '8px',
-          fontWeight:    400,
-          letterSpacing: '0.30em',
+          fontSize:      '10px',
+          fontWeight:    500,
+          letterSpacing: '0.26em',
           textTransform: 'uppercase',
-          color:         'rgba(0,0,0,0.28)',
+          color:         'rgba(0,0,0,0.42)',
           whiteSpace:    'nowrap',
           pointerEvents: 'none',
           userSelect:    'none',
