@@ -49,7 +49,7 @@ export default function World() {
       {/* ── Main headline ─────────────────────────────────────────────────── */}
       <h2
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
           fontSize: 'clamp(48px, 7vw, 110px)',
           fontWeight: 300,
           color: '#FAF8F5',
@@ -144,7 +144,7 @@ export default function World() {
             <p
               key={text}
               style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                 fontSize: 'clamp(22px, 3.5vw, 48px)',
                 fontWeight: 300,
                 lineHeight: 1.3,
@@ -183,7 +183,7 @@ export default function World() {
       {/* ── Pull quote ────────────────────────────────────────────────────── */}
       <blockquote
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
           fontSize: 'clamp(18px, 2.5vw, 28px)',
           fontWeight: 300,
           fontStyle: 'italic',

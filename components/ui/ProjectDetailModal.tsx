@@ -141,7 +141,7 @@ export default function ProjectDetailModal({ project, onClose }: ProjectDetailMo
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <span style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                   fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 300, fontStyle: 'italic',
                   color: `${CATEGORY_COLORS[project.category]}60`, letterSpacing: '-0.02em',
                 }}>
@@ -170,7 +170,7 @@ export default function ProjectDetailModal({ project, onClose }: ProjectDetailMo
               </div>
 
               <h2 style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                 fontSize: 'clamp(1.8rem, 4vw, 3rem)', fontWeight: 300,
                 color: '#060606', lineHeight: 1.1, letterSpacing: '-0.02em', marginBottom: '20px',
               }}>
@@ -185,7 +185,7 @@ export default function ProjectDetailModal({ project, onClose }: ProjectDetailMo
               </p>
 
               <blockquote style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
+                fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                 fontSize: 'clamp(1rem, 2vw, 1.25rem)', fontStyle: 'italic', fontWeight: 300,
                 lineHeight: 1.65, color: 'rgba(6,6,6,0.55)',
                 borderLeft: `3px solid ${CATEGORY_COLORS[project.category]}`,

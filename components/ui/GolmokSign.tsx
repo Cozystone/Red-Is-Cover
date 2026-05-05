@@ -109,6 +109,7 @@ function PolaroidPhoto({ photo, onDismiss }: { photo: CapturedPhoto; onDismiss: 
 export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
   const setPhase = onPhaseChange
   const [mounted, setMounted] = useState(false)
+  const [inHeroView, setInHeroView] = useState(true)
   const [capturedPhoto, setCapturedPhoto] = useState<CapturedPhoto | null>(null)
   const imgRef = useRef<HTMLImageElement>(null)
   const { gunState } = useGun()
@@ -119,6 +120,14 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
     setMounted(true)
     import('@/components/ui/WhiteRoomScene')
     import('@/components/ui/PhoneCallScene')
+  }, [])
+
+  useEffect(() => {
+    const onScroll = () => {
+      setInHeroView(window.scrollY < window.innerHeight * 0.85)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const handleClick = () => {
@@ -146,8 +155,8 @@ export default function GolmokSign({ phase, onPhaseChange }: GolmokSignProps) {
         />
       </div>
 
-      {/* ── Portal click target ─────────────────────────────────────────────── */}
-      {mounted && isRevealed && phase === 'idle' && createPortal(
+      {/* ── Portal click target — only while hero is in view ───────────────── */}
+      {mounted && isRevealed && phase === 'idle' && inHeroView && createPortal(
         <div onClick={handleClick} onMouseEnter={handleHoverIn} onMouseLeave={handleHoverOut}
           style={{
             position: 'fixed', right: 'clamp(22%, 29vw, 38%)', bottom: 'clamp(158px, 28vh, 300px)',

@@ -50,7 +50,7 @@ export default function Profile() {
       {/* ── Heading ───────────────────────────────────────────────────────── */}
       <h2
         style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
           fontSize: 'clamp(4rem, 8vw, 9rem)',
           fontWeight: 300,
           color: '#FAF8F5',
@@ -169,7 +169,7 @@ export default function Profile() {
               </span>
               <span
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                   fontSize: 'clamp(16px, 2vw, 22px)',
                   fontWeight: 300,
                   color: '#FAF8F5',
@@ -196,7 +196,7 @@ export default function Profile() {
           <p
             key={text}
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
               fontSize: 'clamp(1.3rem, 2.8vw, 2.4rem)',
               fontWeight: 300,
               color: '#FAF8F5',

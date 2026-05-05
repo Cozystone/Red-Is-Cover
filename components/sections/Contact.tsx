@@ -26,7 +26,7 @@ export default function Contact() {
           position:    'absolute',
           right:       'calc(var(--page-margin) - 20px)',
           bottom:      '-40px',
-          fontFamily:  "'Cormorant Garamond', Georgia, serif",
+          fontFamily:  '"Helvetica Neue", Helvetica, Arial, sans-serif',
           fontSize:    'clamp(200px, 30vw, 420px)',
           fontWeight:  300,
           lineHeight:  1,
@@ -64,7 +64,7 @@ export default function Contact() {
         {/* Headline */}
         <h2
           style={{
-            fontFamily:    "'Cormorant Garamond', Georgia, serif",
+            fontFamily:    '"Helvetica Neue", Helvetica, Arial, sans-serif',
             fontSize:      'clamp(3.5rem, 7vw, 9rem)',
             fontWeight:    300,
             lineHeight:    1.0,
@@ -91,7 +91,7 @@ export default function Contact() {
             href="mailto:hello@red-is-cover.world"
             className="contact-email"
             style={{
-              fontFamily:    "'Cormorant Garamond', Georgia, serif",
+              fontFamily:    '"Helvetica Neue", Helvetica, Arial, sans-serif',
               fontSize:      'clamp(1.3rem, 2.5vw, 2.2rem)',
               fontWeight:    300,
               color:         '#FAF8F5',

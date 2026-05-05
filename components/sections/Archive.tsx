@@ -121,7 +121,7 @@ export default function Archive() {
         <ScrollReveal delay={0.1}>
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
               fontSize: 'clamp(2.8rem, 7vw, 7rem)',
               fontWeight: 300,
               color: '#060606',
@@ -194,7 +194,7 @@ export default function Archive() {
         >
           <p
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
+              fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
               fontSize: 'clamp(1.5rem, 3.5vw, 3.5rem)',
               fontStyle: 'italic',
               fontWeight: 300,
@@ -279,7 +279,7 @@ export default function Archive() {
             <ScrollReveal delay={0.08}>
               <p
                 style={{
-                  fontFamily: "'Cormorant Garamond', Georgia, serif",
+                  fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
                   fontSize: 'clamp(2.5rem, 5vw, 5rem)',
                   fontWeight: 300,
                   fontStyle: 'italic',
