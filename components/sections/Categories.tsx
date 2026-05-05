@@ -1,476 +1,421 @@
 'use client'
 
-/* Categories Section — replaces Works.tsx */
-/* Category gateway system with popup trigger */
+/* Categories Section — WorksBrowser
+   브라우저 창 UI가 섹션 안에 embedded.
+   상단 탭으로 카테고리 전환, 카드 클릭 시 ProjectDetailModal 열림. */
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { useState, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import ScrollReveal from '@/components/ui/ScrollReveal'
+import ProjectDetailModal from '@/components/ui/ProjectDetailModal'
+import { MOCK_PROJECTS } from '@/lib/projects'
+import type { Project, ProjectCategory } from '@/lib/types'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Category config ──────────────────────────────────────────────────────────
 
-interface Project {
-  id: string
-  title: string
-  status: 'in_progress' | 'upcoming' | 'completed' | 'archived'
-  category: 'art' | 'fashion' | 'brand' | 'writing' | 'worldbuilding'
-  description: string
-  concept: string
-  year: string
-  tags?: string[]
-}
-
-interface Category {
-  key: string
+interface CategoryDef {
+  key: ProjectCategory
   label: string
-  number: string
   color: string
+  slug: string
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_PROJECTS: Project[] = [
-  {
-    id: '1',
-    title: 'The Weight of Objects',
-    status: 'completed',
-    category: 'art',
-    description: 'What isolated objects reveal about absence and memory.',
-    concept: 'When an object is placed in an empty space, it stops being functional and starts being symbolic.',
-    year: '2024',
-    tags: ['visual', 'object', 'memory'],
-  },
-  {
-    id: '2',
-    title: 'Cold Sun',
-    status: 'completed',
-    category: 'art',
-    description: 'Pale light, empty landscape, and the geometry of loneliness.',
-    concept: 'A study in the emotional temperature of natural light.',
-    year: '2024',
-    tags: ['editorial', 'landscape', 'light'],
-  },
-  {
-    id: '3',
-    title: 'Telephone',
-    status: 'in_progress',
-    category: 'art',
-    description: 'A single telephone in an empty room. Nobody calls.',
-    concept: 'Absence made physical. The object that was supposed to connect.',
-    year: '2025',
-    tags: ['installation', 'object', 'silence'],
-  },
-  {
-    id: '4',
-    title: 'Suit',
-    status: 'upcoming',
-    category: 'fashion',
-    description: 'What does a suit mean when there is no body inside it?',
-    concept: 'The empty garment as portrait.',
-    year: '2025',
-    tags: ['fashion', 'body', 'absence'],
-  },
-  {
-    id: '5',
-    title: 'Red Is Cover',
-    status: 'in_progress',
-    category: 'brand',
-    description: 'A brand identity exploring what it means to mark something as significant.',
-    concept: 'Red as a decision. Red as a claim. Red as the beginning of a sentence.',
-    year: '2025',
-    tags: ['brand', 'color', 'language'],
-  },
-  {
-    id: '6',
-    title: 'Notes on Warmth',
-    status: 'in_progress',
-    category: 'writing',
-    description: 'An ongoing collection of observations about tenderness in a cold age.',
-    concept: 'Writing as a form of resistance against speed and distraction.',
-    year: '2025',
-    tags: ['writing', 'philosophy', 'warmth'],
-  },
+const CATEGORIES: CategoryDef[] = [
+  { key: 'art',           label: 'Art & Visual',      color: '#D91C1C', slug: 'art-and-visual'      },
+  { key: 'fashion',       label: 'Fashion & Image',   color: '#C9B55A', slug: 'fashion-and-image'   },
+  { key: 'brand',         label: 'Brand & Concept',   color: '#B8CDD8', slug: 'brand-and-concept'   },
+  { key: 'writing',       label: 'Writing & Thought', color: '#C4612A', slug: 'writing-and-thought' },
+  { key: 'worldbuilding', label: 'Worldbuilding',     color: '#8A8A8A', slug: 'worldbuilding'        },
 ]
 
-const CATEGORIES: Category[] = [
-  { key: 'art', label: 'Art & Visual', number: '01', color: '#D91C1C' },
-  { key: 'fashion', label: 'Fashion & Image', number: '02', color: '#C9B55A' },
-  { key: 'brand', label: 'Brand & Concept', number: '03', color: '#B8CDD8' },
-  { key: 'writing', label: 'Writing & Thought', number: '04', color: '#C4612A' },
-  { key: 'worldbuilding', label: 'Worldbuilding', number: '05', color: '#8A8A8A' },
-]
+// ─── Album card ───────────────────────────────────────────────────────────────
 
-// ─── Category Row ─────────────────────────────────────────────────────────────
-
-interface CategoryRowProps {
-  category: Category
-  projectCount: number
+interface AlbumCardProps {
+  project: Project
+  categoryColor: string
   onClick: () => void
 }
 
-function CategoryRow({ category, projectCount, onClick }: CategoryRowProps) {
+function AlbumCard({ project, categoryColor, onClick }: AlbumCardProps) {
   const [hovered, setHovered] = useState(false)
 
-  return (
-    <motion.div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={onClick}
-      animate={{
-        backgroundColor: hovered ? 'rgba(255,255,255,0.03)' : 'transparent',
-      }}
-      transition={{ duration: 0.18 }}
-      className="category-row"
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '64px 1fr auto auto',
-        alignItems: 'center',
-        gap: '24px',
-        padding: '28px 0',
-        borderBottom: '1px solid rgba(255,255,255,0.08)',
-        cursor: 'pointer',
-      }}
-    >
-      {/* Number */}
-      <span
-        style={{
-          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-          fontSize: '10px',
-          letterSpacing: '0.15em',
-          color: 'rgba(255,255,255,0.3)',
-        }}
-      >
-        {category.number}
-      </span>
-
-      {/* Category label */}
-      <motion.span
-        animate={{
-          borderLeftWidth: hovered ? '3px' : '0px',
-          paddingLeft: hovered ? '16px' : '0px',
-          borderLeftColor: category.color,
-        }}
-        transition={{ duration: 0.2 }}
-        style={{
-          fontFamily: "'Cormorant Garamond', Georgia, serif",
-          fontSize: 'clamp(1.5rem, 3.5vw, 3.5rem)',
-          fontWeight: 300,
-          color: '#FAF8F5',
-          lineHeight: 1.1,
-          borderLeftStyle: 'solid',
-        }}
-      >
-        {category.label}
-      </motion.span>
-
-      {/* Project count */}
-      <span
-        style={{
-          fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-          fontSize: '10px',
-          letterSpacing: '0.12em',
-          color: 'rgba(255,255,255,0.3)',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {projectCount} {projectCount === 1 ? 'work' : 'works'}
-      </span>
-
-      {/* Arrow — visible on hover */}
-      <motion.span
-        animate={{
-          opacity: hovered ? 1 : 0,
-          x: hovered ? 0 : -8,
-        }}
-        transition={{ duration: 0.18 }}
-        aria-hidden="true"
-        style={{
-          color: '#D91C1C',
-          fontSize: '18px',
-          fontFamily: "'DM Sans', sans-serif",
-          width: '24px',
-          textAlign: 'right',
-        }}
-      >
-        →
-      </motion.span>
-    </motion.div>
-  )
-}
-
-// ─── Inline Project Popup (until ProjectPopup component is built) ─────────────
-
-interface ProjectPopupProps {
-  categoryKey: string
-  projects: Project[]
-  categoryColor: string
-  categoryLabel: string
-  onClose: () => void
-}
-
-function InlineProjectPopup({
-  categoryKey,
-  projects,
-  categoryColor,
-  categoryLabel,
-  onClose,
-}: ProjectPopupProps) {
-  const filtered = projects.filter((p) => p.category === categoryKey)
-
   const STATUS_LABELS: Record<Project['status'], string> = {
-    completed: 'COMPLETED',
+    completed:   'COMPLETED',
     in_progress: 'IN PROGRESS',
-    upcoming: 'UPCOMING',
-    archived: 'ARCHIVED',
+    upcoming:    'UPCOMING',
+    archived:    'ARCHIVED',
+  }
+  const STATUS_COLORS: Record<Project['status'], string> = {
+    completed:   '#8A8A8A',
+    in_progress: categoryColor,
+    upcoming:    '#C9B55A',
+    archived:    'rgba(6,6,6,0.25)',
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.25 }}
-      onClick={onClose}
+    <div
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        position: 'fixed',
-        inset: 0,
-        backgroundColor: 'rgba(6,6,6,0.72)',
-        zIndex: 200,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 'clamp(16px, 4vw, 48px)',
+        cursor:          'pointer',
+        backgroundColor: '#FFFFFF',
+        border:          '1px solid rgba(6,6,6,0.08)',
+        transition:      'box-shadow 0.2s ease, transform 0.2s ease',
+        boxShadow:       hovered
+          ? '0 8px 32px rgba(6,6,6,0.14)'
+          : '0 1px 4px rgba(6,6,6,0.06)',
+        transform:       hovered ? 'translateY(-2px)' : 'translateY(0)',
       }}
     >
-      <motion.div
-        initial={{ opacity: 0, y: 32 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 32 }}
-        transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: '#FAF8F5',
-          width: '100%',
-          maxWidth: '680px',
-          maxHeight: '80vh',
-          overflowY: 'auto',
-          border: '1px solid rgba(6,6,6,0.15)',
-        }}
-      >
-        {/* Popup title bar */}
+      {/* Thumbnail */}
+      {project.image_url ? (
+        <div style={{ position: 'relative', width: '100%', paddingTop: '66.67%', overflow: 'hidden' }}>
+          <img
+            src={project.image_url}
+            alt={project.title}
+            style={{
+              position:  'absolute',
+              inset:     0,
+              width:     '100%',
+              height:    '100%',
+              objectFit: 'cover',
+              transition: 'transform 0.4s ease',
+              transform:  hovered ? 'scale(1.04)' : 'scale(1)',
+            }}
+          />
+        </div>
+      ) : (
         <div
+          aria-hidden="true"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 20px',
-            backgroundColor: '#060606',
-            borderBottom: '1px solid rgba(255,255,255,0.1)',
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
+            width:      '100%',
+            paddingTop: '66.67%',
+            position:   'relative',
+            overflow:   'hidden',
+            background: `linear-gradient(135deg, ${categoryColor}18 0%, ${categoryColor}06 100%)`,
+            borderBottom: `1px solid ${categoryColor}20`,
           }}
         >
-          <div style={{ display: 'flex', gap: '7px', alignItems: 'center' }}>
-            {(['#D91C1C', '#C9B55A', 'rgba(255,255,255,0.25)'] as const).map((color, i) => (
-              <div
-                key={i}
-                style={{ width: 9, height: 9, borderRadius: '50%', backgroundColor: color }}
-              />
-            ))}
-          </div>
           <span
             style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: '9px',
-              letterSpacing: '0.22em',
-              textTransform: 'uppercase',
-              color: 'rgba(255,255,255,0.5)',
+              position:      'absolute',
+              inset:         0,
+              display:       'flex',
+              alignItems:    'center',
+              justifyContent:'center',
+              fontFamily:    "'Cormorant Garamond', Georgia, serif",
+              fontSize:      'clamp(1.4rem, 3vw, 2rem)',
+              fontStyle:     'italic',
+              fontWeight:    300,
+              color:         `${categoryColor}50`,
+              padding:       '12px',
+              textAlign:     'center',
+              lineHeight:    1.2,
             }}
           >
-            {categoryLabel.toUpperCase()} — {filtered.length} WORKS
+            {project.title}
           </span>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: '11px',
-              color: 'rgba(255,255,255,0.5)',
-              letterSpacing: '0.12em',
-              padding: '2px 6px',
-            }}
-          >
-            ESC
-          </button>
         </div>
+      )}
 
-        {/* Category heading inside popup */}
-        <div
+      {/* Card body */}
+      <div style={{ padding: '14px 16px 16px' }}>
+        <p
           style={{
-            padding: '32px 32px 0',
-            borderBottom: '2px solid',
-            borderBottomColor: categoryColor,
-            paddingBottom: '24px',
+            fontFamily:    "'Cormorant Garamond', Georgia, serif",
+            fontSize:      'clamp(1rem, 1.8vw, 1.25rem)',
+            fontWeight:    300,
+            color:         '#060606',
+            lineHeight:    1.25,
+            marginBottom:  '8px',
+            letterSpacing: '-0.01em',
           }}
         >
-          <p
+          {project.title}
+        </p>
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span
             style={{
-              fontFamily: "'DM Sans', sans-serif",
-              fontSize: '10px',
-              letterSpacing: '0.2em',
+              fontFamily:    "'DM Sans', sans-serif",
+              fontSize:      '8px',
+              letterSpacing: '0.18em',
               textTransform: 'uppercase',
-              color: '#8A8A8A',
-              marginBottom: '8px',
+              color:         STATUS_COLORS[project.status],
             }}
           >
-            CATEGORY
-          </p>
-          <h3
+            {STATUS_LABELS[project.status]}
+          </span>
+          <span
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 'clamp(1.8rem, 4vw, 3rem)',
-              fontWeight: 300,
-              color: '#060606',
-              lineHeight: 1.1,
+              fontFamily:    "'DM Sans', sans-serif",
+              fontSize:      '10px',
+              color:         'rgba(6,6,6,0.35)',
+              letterSpacing: '0.05em',
             }}
           >
-            {categoryLabel}
-          </h3>
+            {project.year}
+          </span>
         </div>
-
-        {/* Project list */}
-        <div style={{ padding: '0 32px 32px' }}>
-          {filtered.length === 0 ? (
-            <p
-              style={{
-                fontFamily: "'Cormorant Garamond', Georgia, serif",
-                fontSize: '1.2rem',
-                fontStyle: 'italic',
-                color: '#8A8A8A',
-                padding: '32px 0',
-              }}
-            >
-              No works yet. Something is forming.
-            </p>
-          ) : (
-            filtered.map((project, i) => (
-              <div
-                key={project.id}
-                style={{
-                  padding: '24px 0',
-                  borderBottom:
-                    i < filtered.length - 1 ? '1px solid rgba(6,6,6,0.08)' : 'none',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'baseline',
-                    justifyContent: 'space-between',
-                    marginBottom: '10px',
-                    gap: '16px',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: "'Cormorant Garamond', Georgia, serif",
-                      fontSize: 'clamp(1.2rem, 2.5vw, 1.6rem)',
-                      fontWeight: 300,
-                      color: '#060606',
-                      lineHeight: 1.2,
-                    }}
-                  >
-                    {project.title}
-                  </p>
-                  <span
-                    style={{
-                      fontFamily: "'DM Sans', sans-serif",
-                      fontSize: '9px',
-                      letterSpacing: '0.15em',
-                      textTransform: 'uppercase',
-                      color: project.status === 'in_progress' ? categoryColor : '#8A8A8A',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {STATUS_LABELS[project.status]}
-                  </span>
-                </div>
-
-                <p
-                  style={{
-                    fontFamily: "'DM Sans', sans-serif",
-                    fontSize: '13px',
-                    lineHeight: 1.7,
-                    color: '#8A8A8A',
-                    marginBottom: '8px',
-                    maxWidth: '52ch',
-                  }}
-                >
-                  {project.description}
-                </p>
-
-                <p
-                  style={{
-                    fontFamily: "'Cormorant Garamond', Georgia, serif",
-                    fontSize: '14px',
-                    fontStyle: 'italic',
-                    lineHeight: 1.65,
-                    color: 'rgba(6,6,6,0.55)',
-                    maxWidth: '52ch',
-                  }}
-                >
-                  {project.concept}
-                </p>
-
-                {project.tags && project.tags.length > 0 && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '8px',
-                      marginTop: '12px',
-                    }}
-                  >
-                    {project.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        style={{
-                          fontFamily: "'DM Sans', sans-serif",
-                          fontSize: '9px',
-                          letterSpacing: '0.15em',
-                          textTransform: 'uppercase',
-                          color: '#8A8A8A',
-                          border: '1px solid rgba(6,6,6,0.15)',
-                          padding: '3px 10px',
-                        }}
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }
 
-// ─── Categories Section ───────────────────────────────────────────────────────
+// ─── Browser tab ──────────────────────────────────────────────────────────────
+
+interface BrowserTabProps {
+  label: string
+  active: boolean
+  color: string
+  onClick: () => void
+}
+
+function BrowserTab({ label, active, color, onClick }: BrowserTabProps) {
+  const [hovered, setHovered] = useState(false)
+
+  return (
+    <button
+      onClick={onClick}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display:         'flex',
+        alignItems:      'center',
+        gap:             '6px',
+        padding:         '8px 16px',
+        backgroundColor: active
+          ? '#FAF8F5'
+          : hovered
+            ? 'rgba(6,6,6,0.06)'
+            : 'transparent',
+        border:          'none',
+        borderTop:       active ? `2px solid ${color}` : '2px solid transparent',
+        borderRight:     active ? '1px solid rgba(6,6,6,0.1)' : '1px solid transparent',
+        borderLeft:      active ? '1px solid rgba(6,6,6,0.1)' : '1px solid transparent',
+        borderBottom:    active ? '1px solid #FAF8F5' : 'none',
+        cursor:          'pointer',
+        transition:      'background-color 0.15s ease',
+        marginBottom:    active ? '-1px' : '0',
+        position:        'relative',
+        zIndex:          active ? 2 : 1,
+        flexShrink:      0,
+      }}
+    >
+      {active && (
+        <span
+          aria-hidden="true"
+          style={{
+            width:           6,
+            height:          6,
+            borderRadius:    '50%',
+            backgroundColor: color,
+            flexShrink:      0,
+          }}
+        />
+      )}
+      <span
+        style={{
+          fontFamily:    "'DM Sans', sans-serif",
+          fontSize:      '11px',
+          fontWeight:    active ? 500 : 400,
+          letterSpacing: '0.04em',
+          color:         active ? '#060606' : 'rgba(6,6,6,0.45)',
+          whiteSpace:    'nowrap',
+        }}
+      >
+        {label}
+      </span>
+    </button>
+  )
+}
+
+// ─── WorksBrowser ─────────────────────────────────────────────────────────────
+
+interface WorksBrowserProps {
+  activeTab: ProjectCategory
+  onTabChange: (key: ProjectCategory) => void
+  onProjectClick: (project: Project) => void
+}
+
+function WorksBrowser({ activeTab, onTabChange, onProjectClick }: WorksBrowserProps) {
+  const activeDef = CATEGORIES.find((c) => c.key === activeTab)!
+  const filtered  = MOCK_PROJECTS.filter((p) => p.category === activeTab)
+
+  const urlSlug = activeDef.slug
+
+  return (
+    <div
+      style={{
+        border:       '1px solid rgba(6,6,6,0.14)',
+        boxShadow:    '0 16px 64px rgba(6,6,6,0.25)',
+        borderRadius: '8px',
+        overflow:     'hidden',
+      }}
+    >
+      {/* ── Title bar ─────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display:         'flex',
+          alignItems:      'center',
+          gap:             '12px',
+          padding:         '11px 16px',
+          backgroundColor: '#E8E5E0',
+          borderBottom:    '1px solid rgba(6,6,6,0.1)',
+        }}
+      >
+        {/* Dots */}
+        <div style={{ display: 'flex', gap: '7px', alignItems: 'center', flexShrink: 0 }}>
+          {(['#D91C1C', '#C9B55A', '#AAAAAA'] as const).map((color, i) => (
+            <div
+              key={i}
+              aria-hidden="true"
+              style={{ width: 11, height: 11, borderRadius: '50%', backgroundColor: color }}
+            />
+          ))}
+        </div>
+
+        {/* URL bar */}
+        <div
+          aria-hidden="true"
+          style={{
+            flex:            1,
+            backgroundColor: 'rgba(255,255,255,0.75)',
+            border:          '1px solid rgba(6,6,6,0.12)',
+            borderRadius:    '5px',
+            padding:         '5px 12px',
+            display:         'flex',
+            alignItems:      'center',
+            gap:             '6px',
+            maxWidth:        '420px',
+            margin:          '0 auto',
+          }}
+        >
+          <span
+            style={{
+              width:           6,
+              height:          6,
+              borderRadius:    '50%',
+              backgroundColor: activeDef.color,
+              flexShrink:      0,
+            }}
+          />
+          <span
+            style={{
+              fontFamily:    "'DM Sans', sans-serif",
+              fontSize:      '11px',
+              color:         'rgba(6,6,6,0.5)',
+              letterSpacing: '0.01em',
+              overflow:      'hidden',
+              whiteSpace:    'nowrap',
+              textOverflow:  'ellipsis',
+            }}
+          >
+            red-is-cover.world/work/{urlSlug}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Tab bar ───────────────────────────────────────────────────── */}
+      <div
+        style={{
+          display:         'flex',
+          alignItems:      'flex-end',
+          backgroundColor: '#DEDBD5',
+          borderBottom:    '1px solid rgba(6,6,6,0.1)',
+          paddingLeft:     '12px',
+          paddingTop:      '6px',
+          overflowX:       'auto',
+          scrollbarWidth:  'none',
+        }}
+      >
+        {CATEGORIES.map((cat) => (
+          <BrowserTab
+            key={cat.key}
+            label={cat.label}
+            active={activeTab === cat.key}
+            color={cat.color}
+            onClick={() => onTabChange(cat.key)}
+          />
+        ))}
+      </div>
+
+      {/* ── Content area ──────────────────────────────────────────────── */}
+      <div
+        style={{
+          backgroundColor: '#FAF8F5',
+          minHeight:       '400px',
+        }}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            style={{ padding: 'clamp(20px, 3vw, 40px)' }}
+          >
+            {filtered.length === 0 ? (
+              <div
+                style={{
+                  padding:      '80px 0',
+                  textAlign:    'center',
+                }}
+              >
+                <p
+                  style={{
+                    fontFamily:  "'Cormorant Garamond', Georgia, serif",
+                    fontSize:    'clamp(1.2rem, 2.5vw, 1.6rem)',
+                    fontStyle:   'italic',
+                    fontWeight:  300,
+                    color:       'rgba(6,6,6,0.35)',
+                    lineHeight:  1.5,
+                  }}
+                >
+                  Something is forming.
+                </p>
+              </div>
+            ) : (
+              <div
+                className="works-grid"
+                style={{
+                  display:             'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                  gap:                 'clamp(12px, 2vw, 20px)',
+                }}
+              >
+                {filtered.map((project) => (
+                  <AlbumCard
+                    key={project.id}
+                    project={project}
+                    categoryColor={activeDef.color}
+                    onClick={() => onProjectClick(project)}
+                  />
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  )
+}
+
+// ─── Section ──────────────────────────────────────────────────────────────────
 
 export default function Categories() {
-  const [activeCategory, setActiveCategory] = useState<string | null>(null)
+  const [activeTab,       setActiveTab]       = useState<ProjectCategory>('art')
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
 
-  const getProjectCount = (key: string) =>
-    MOCK_PROJECTS.filter((p) => p.category === key).length
+  const handleProjectClick = useCallback((project: Project) => {
+    setSelectedProject(project)
+  }, [])
 
-  const activeCategoryData = CATEGORIES.find((c) => c.key === activeCategory)
+  const handleClose = useCallback(() => {
+    setSelectedProject(null)
+  }, [])
 
   return (
     <>
@@ -479,23 +424,23 @@ export default function Categories() {
         aria-label="Selected Work"
         style={{
           backgroundColor: '#060606',
-          paddingTop: 'clamp(96px, 12vw, 192px)',
-          paddingBottom: 'clamp(96px, 12vw, 192px)',
-          paddingLeft: 'var(--page-margin)',
-          paddingRight: 'var(--page-margin)',
+          paddingTop:      'clamp(96px, 12vw, 192px)',
+          paddingBottom:   'clamp(96px, 12vw, 192px)',
+          paddingLeft:     'var(--page-margin)',
+          paddingRight:    'var(--page-margin)',
         }}
       >
-        {/* ── Section header ──────────────────────────────────────────────── */}
+        {/* ── Section header ──────────────────────────────────────────── */}
         <ScrollReveal variant="label" delay={0}>
           <p
             style={{
-              fontFamily: "'DM Sans', 'Helvetica Neue', sans-serif",
-              fontSize: '10px',
-              fontWeight: 500,
+              fontFamily:    "'DM Sans', 'Helvetica Neue', sans-serif",
+              fontSize:      '10px',
+              fontWeight:    500,
               letterSpacing: '0.22em',
               textTransform: 'uppercase',
-              color: '#D91C1C',
-              marginBottom: '24px',
+              color:         '#D91C1C',
+              marginBottom:  '24px',
             }}
           >
             03 — SELECTED WORK
@@ -505,53 +450,50 @@ export default function Categories() {
         <ScrollReveal delay={0.05}>
           <h2
             style={{
-              fontFamily: "'Cormorant Garamond', Georgia, serif",
-              fontSize: 'clamp(3rem, 8vw, 8rem)',
-              fontWeight: 300,
-              color: '#FAF8F5',
-              lineHeight: 1.0,
+              fontFamily:    "'Cormorant Garamond', Georgia, serif",
+              fontSize:      'clamp(3rem, 8vw, 8rem)',
+              fontWeight:    300,
+              color:         '#FAF8F5',
+              lineHeight:    1.0,
               letterSpacing: '-0.02em',
-              marginBottom: 'clamp(48px, 6vw, 80px)',
+              marginBottom:  'clamp(40px, 5vw, 64px)',
             }}
           >
             Chapters.
           </h2>
         </ScrollReveal>
 
-        {/* ── Category list ────────────────────────────────────────────────── */}
-        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
-          {CATEGORIES.map((category, i) => (
-            <ScrollReveal key={category.key} delay={i * 0.06}>
-              <CategoryRow
-                category={category}
-                projectCount={getProjectCount(category.key)}
-                onClick={() => setActiveCategory(category.key)}
-              />
-            </ScrollReveal>
-          ))}
-        </div>
+        {/* ── WorksBrowser ────────────────────────────────────────────── */}
+        <ScrollReveal delay={0.1}>
+          <WorksBrowser
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            onProjectClick={handleProjectClick}
+          />
+        </ScrollReveal>
       </section>
 
-      {/* ── Project popup ─────────────────────────────────────────────────── */}
-      {activeCategory && activeCategoryData && (
-        <InlineProjectPopup
-          categoryKey={activeCategory}
-          projects={MOCK_PROJECTS}
-          categoryColor={activeCategoryData.color}
-          categoryLabel={activeCategoryData.label}
-          onClose={() => setActiveCategory(null)}
-        />
-      )}
+      {/* ── Project detail modal ────────────────────────────────────── */}
+      <ProjectDetailModal
+        project={selectedProject}
+        onClose={handleClose}
+      />
 
       <style>{`
-        @media (max-width: 480px) {
-          .category-row {
-            grid-template-columns: 36px 1fr auto !important;
-            gap: 12px !important;
-            padding: 20px 0 !important;
-          }
-          .category-row > span:last-child { display: none; }
+        .works-grid {
+          grid-template-columns: repeat(4, 1fr);
         }
+        @media (max-width: 1100px) {
+          .works-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+        @media (max-width: 720px) {
+          .works-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 420px) {
+          .works-grid { grid-template-columns: 1fr; }
+        }
+        /* 탭바 스크롤바 숨김 */
+        div[style*="overflowX: auto"]::-webkit-scrollbar { display: none; }
       `}</style>
     </>
   )
