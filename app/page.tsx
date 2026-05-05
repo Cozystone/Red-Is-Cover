@@ -27,7 +27,7 @@ export default function Home() {
         {/* VideoHero (sea video) sits in front; gun shot reveals Landing.   */}
         <div style={{
           position:   'relative',
-          height:     '100dvh',
+          height:     '100vh',
           minHeight:  '600px',
           overflow:   'hidden',
         }}>
