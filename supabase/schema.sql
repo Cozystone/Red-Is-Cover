@@ -25,9 +25,19 @@ create table if not exists background_images (
   created_at timestamp with time zone default now()
 );
 
+-- Messages table (Kimail)
+create table if not exists messages (
+  id uuid default gen_random_uuid() primary key,
+  from_name text not null,
+  subject text default '(No Subject)',
+  body text not null,
+  created_at timestamp with time zone default now()
+);
+
 -- Enable RLS
 alter table projects enable row level security;
 alter table background_images enable row level security;
+alter table messages enable row level security;
 
 -- Public read access
 create policy "Public can read projects"
@@ -42,3 +52,10 @@ create policy "Auth users can manage projects"
 
 create policy "Auth users can manage background_images"
   on background_images for all using (auth.role() = 'authenticated');
+
+-- Messages: anyone can insert (Kimail), only auth can read
+create policy "Anyone can send messages"
+  on messages for insert with check (true);
+
+create policy "Auth users can read messages"
+  on messages for select using (auth.role() = 'authenticated');
