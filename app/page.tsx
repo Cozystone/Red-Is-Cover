@@ -10,11 +10,14 @@ import PinterestBoard from "@/components/sections/PinterestBoard";
 import CustomCursor from "@/components/ui/CustomCursor";
 import BackgroundField from "@/components/ui/BackgroundField";
 import GunOverlay from "@/components/ui/GunOverlay";
+import AdminDoor from "@/components/sections/AdminDoor";
 import { GunProvider } from "@/lib/gunContext";
+import { AdminProvider } from "@/lib/adminContext";
 
 /* ─── Page ────────────────────────────────────────────────────────────────── */
 export default function Home() {
   return (
+    <AdminProvider>
     <GunProvider>
       <CustomCursor />
       <BackgroundField />
@@ -49,8 +52,10 @@ export default function Home() {
         <Categories />
         <Archive />
         <Profile />
+        <AdminDoor />
         <Contact />
       </main>
     </GunProvider>
+    </AdminProvider>
   );
 }

@@ -2,12 +2,16 @@
 
 import dynamic from 'next/dynamic'
 import { useGun } from '@/lib/gunContext'
+import { useAdmin } from '@/lib/adminContext'
 import { useEffect, useState } from 'react'
 
 const KeychainCanvas = dynamic(() => import('./KeychainCanvas'), { ssr: false })
 
+const HV = "'Helvetica Neue', Helvetica, Arial, sans-serif"
+
 export default function KeychainNav() {
   const { gunState, resetGun } = useGun()
+  const { isAdmin, logoutAdmin } = useAdmin()
   const [logoVisible, setLogoVisible] = useState(false)
 
   useEffect(() => {
@@ -56,7 +60,7 @@ export default function KeychainNav() {
             height:         '48px',
             display:        'flex',
             alignItems:     'center',
-            fontFamily:     "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            fontFamily:     HV,
             fontSize:       '11px',
             fontWeight:     700,
             letterSpacing:  '0.22em',
@@ -68,10 +72,48 @@ export default function KeychainNav() {
             textShadow:     '0 1px 8px rgba(0,0,0,0.8)',
             opacity:        logoVisible ? 1 : 0,
             transition:     'opacity 0.6s ease',
+            gap:            '6px',
           }}
         >
           RED IS COVER
+          {isAdmin && (
+            <span style={{ color: '#D91C1C', fontWeight: 700, letterSpacing: '0.22em' }}>
+              {' '}ADMIN
+            </span>
+          )}
         </a>
+
+        {/* EXIT ADMIN button — only in admin mode */}
+        {isAdmin && (
+          <button
+            onClick={logoutAdmin}
+            style={{
+              position:        'absolute',
+              top:             0,
+              right:           'var(--page-margin)',
+              height:          '48px',
+              display:         'flex',
+              alignItems:      'center',
+              fontFamily:      HV,
+              fontSize:        '9px',
+              fontWeight:      700,
+              letterSpacing:   '0.2em',
+              textTransform:   'uppercase',
+              color:           'rgba(255,255,255,0.6)',
+              background:      'none',
+              border:          '1px solid rgba(255,255,255,0.2)',
+              borderRadius:    '3px',
+              padding:         '0 12px',
+              cursor:          'pointer',
+              pointerEvents:   'auto',
+              zIndex:          10,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.6)')}
+          >
+            Exit Admin
+          </button>
+        )}
       </div>
 
       <nav
