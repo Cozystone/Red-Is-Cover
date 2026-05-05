@@ -316,14 +316,13 @@ export default function Categories() {
           </h2>
         </ScrollReveal>
 
-        <ScrollReveal delay={0.1}>
-          {/* ── Chrome browser window ───────────────────────────────────── */}
-          <div style={{
-            borderRadius: '8px 8px 0 0',
-            overflow: 'hidden',
-            boxShadow: '0 20px 80px rgba(0,0,0,0.5)',
-            border: '1px solid rgba(0,0,0,0.3)',
-          }}>
+        {/* ── Chrome browser window ───────────────────────────────────── */}
+        <div style={{
+          borderRadius: '8px 8px 0 0',
+          overflow: 'hidden',
+          boxShadow: '0 20px 80px rgba(0,0,0,0.5)',
+          border: '1px solid rgba(0,0,0,0.3)',
+        }}>
 
             {/* ── 1. Tab strip (Windows Chrome — dark) ──────────────── */}
             <div style={{
@@ -570,12 +569,11 @@ export default function Categories() {
                       {/* Search bar — Chrome 스타일 */}
                       <div style={{
                         display: 'flex', alignItems: 'center', gap: '12px',
-                        backgroundColor: 'rgba(255,255,255,0.92)',
+                        backgroundColor: '#ffffff',
                         borderRadius: '100px', padding: '12px 20px',
                         width: 'min(560px, 90%)',
                         boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
                         marginBottom: 'clamp(32px, 5vw, 48px)',
-                        backdropFilter: 'blur(8px)',
                       }}>
                         <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}>
                           <circle cx="8" cy="8" r="5.5" stroke="#9aa0a6" strokeWidth="1.8" />
@@ -684,7 +682,6 @@ export default function Categories() {
               </div>
             </div>
           </div>
-        </ScrollReveal>
       </section>
 
       <ProjectDetailModal project={selectedProject} onClose={() => setSelectedProject(null)} />
