@@ -116,7 +116,7 @@ function SoupCan({ visible }: { visible: boolean }) {
     // 완전히 나온 후 살짝 bob
     if (visible && Math.abs(ref.current.position.z - TARGET_Z_FRONT) < 0.1) {
       ref.current.position.x = 0
-      ref.current.position.y = -0.35 + Math.sin(clock.getElapsedTime() * 0.9) * 0.185
+      ref.current.position.y = -0.35 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
     }
   })
 
@@ -130,7 +130,34 @@ function SoupCan({ visible }: { visible: boolean }) {
 
 // ── Wall decorations ─────────────────────────────────────────────────────────
 
+// 핀 꽂힌 포스터
 function PinnedPoster({
+  url, position, rotation = [0, 0, 0], width, height,
+}: {
+  url: string
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  width: number
+  height: number
+}) {
+  const texture = useTexture(url)
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh>
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial map={texture} />
+      </mesh>
+      {/* 핀 — 아주 작은 구 */}
+      <mesh position={[0, height / 2 - 0.03, 0.012]}>
+        <sphereGeometry args={[0.010, 8, 8]} />
+        <meshStandardMaterial color="#CC2222" metalness={0.5} roughness={0.3} />
+      </mesh>
+    </group>
+  )
+}
+
+// 핀 없이 벽에 평평하게 붙인 포스터 (Off-White 등)
+function FlatPoster({
   url, position, rotation = [0, 0, 0], width, height, transparent = false,
 }: {
   url: string
@@ -142,39 +169,36 @@ function PinnedPoster({
 }) {
   const texture = useTexture(url)
   return (
-    <group position={position} rotation={rotation}>
-      {/* Poster plane */}
-      <mesh>
-        <planeGeometry args={[width, height]} />
-        <meshStandardMaterial map={texture} transparent={transparent} alphaTest={0.05} />
-      </mesh>
-      {/* Pin — small sphere at top center */}
-      <mesh position={[0, height / 2 - 0.04, 0.015]}>
-        <sphereGeometry args={[0.182, 10, 10]} />
-        <meshStandardMaterial color="#CC2222" metalness={0.4} roughness={0.4} />
-      </mesh>
-    </group>
+    <mesh position={position} rotation={rotation}>
+      <planeGeometry args={[width, height]} />
+      <meshStandardMaterial map={texture} transparent={transparent} alphaTest={0.05} />
+    </mesh>
   )
 }
 
 function WallDecorations() {
+  // Off-White 이미지 비율 ≈ 4.25 : 1 (가로형 배너)
+  const owW = 0.88
+  const owH = owW / 4.25
+
   return (
     <group>
-      {/* Left of door */}
+      {/* ── 문 왼쪽 ── */}
       <PinnedPoster url="/posters/fight-club.jpg"
-        position={[-1.45, 0.28, 0.18]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
+        position={[-1.45, 0.28, 0.05]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
       <PinnedPoster url="/posters/eeaao.jpg"
-        position={[-2.25, -0.05, 0.18]} rotation={[0, 0, -0.07]} width={0.52} height={0.78} />
+        position={[-2.15, -0.08, 0.05]} rotation={[0, 0, -0.06]} width={0.52} height={0.78} />
 
-      {/* Right of door */}
+      {/* Off-White — 왼쪽 포스터들 위 빈공간, 핀 없음, 비율 유지 */}
+      <FlatPoster url="/posters/offwhite.png"
+        position={[-1.80, 0.72, 0.05]} rotation={[0, 0, -0.01]}
+        width={owW} height={owH} transparent />
+
+      {/* ── 문 오른쪽 ── */}
       <PinnedPoster url="/posters/love-letter.jpg"
-        position={[1.25, 0.22, 0.18]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
+        position={[1.25, 0.22, 0.05]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
       <PinnedPoster url="/posters/virgil-abloh.jpg"
-        position={[1.95, -0.08, 0.18]} rotation={[0, 0, 0.06]}  width={0.58} height={0.58} />
-
-      {/* Off-White banner — above door */}
-      <PinnedPoster url="/posters/offwhite.png"
-        position={[0, 1.38, 0.18]} rotation={[0, 0, -0.18]} width={1.05} height={0.24} transparent />
+        position={[1.88, -0.08, 0.05]} rotation={[0, 0, 0.05]}  width={0.58} height={0.58} />
     </group>
   )
 }
