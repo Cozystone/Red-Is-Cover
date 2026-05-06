@@ -39,29 +39,28 @@ const ANSEOGLE_COLORS = ['#4285F4','#EA4335','#FBBC05','#34A853','#EA4335','#428
 function ChromeTab({ label, active, color, onClick }: {
   label: string; active: boolean; color: string; onClick: () => void
 }) {
-  const [hovered, setHovered] = useState(false)
   return (
     <button
       type="button"
       onClick={onClick}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.14)' }}
+      onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent' }}
       style={{
         display:         'flex',
         alignItems:      'center',
         gap:             '6px',
-        padding:         '0 12px',
-        height:          '34px',
+        padding:         '0 14px',
+        height:          '36px',
         minWidth:        '80px',
         maxWidth:        '200px',
-        backgroundColor: active ? '#ffffff' : hovered ? 'rgba(255,255,255,0.12)' : 'transparent',
-        borderRadius:    active ? '8px 8px 0 0' : '4px 4px 0 0',
+        backgroundColor: active ? '#ffffff' : 'transparent',
+        borderRadius:    '8px 8px 0 0',
         cursor:          'pointer',
         flexShrink:      0,
-        transition:      'background-color 0.12s',
-        marginTop:       active ? '2px' : '4px',
+        transition:      'background-color 0.1s',
         border:          'none',
         outline:         'none',
+        WebkitTapHighlightColor: 'transparent',
       }}
     >
       <span style={{
@@ -78,6 +77,7 @@ function ChromeTab({ label, active, color, onClick }: {
         textOverflow: 'ellipsis',
         flex:         1,
         textAlign:    'left',
+        userSelect:   'none',
       }}>
         {label}
       </span>
