@@ -1,12 +1,15 @@
 'use client'
 
 /* AdminDoor — Profile(05)과 Contact(06) 사이의 비밀 관리자 입장 씬
-   문 클릭 → 애니메이션 → Campbell 캔 등장 → 비밀번호 입력 */
+   문 클릭 → 애니메이션 → Campbell 캔 등장 → 비밀번호 입력
+   문/캔 재클릭 → 역재생으로 닫힘
+   비밀번호 성공 → resetGun() + scroll to top (VideoHero 첫 화면) */
 
-import { useState, useRef, useEffect, Suspense } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import dynamic from 'next/dynamic'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAdmin } from '@/lib/adminContext'
+import { useGun } from '@/lib/gunContext'
 
 const DoorScene = dynamic(() => import('./AdminDoorScene'), { ssr: false })
 
@@ -14,13 +17,15 @@ const HV = '"Helvetica Neue", Helvetica, Arial, sans-serif'
 
 export default function AdminDoor() {
   const { loginAdmin } = useAdmin()
-  const [doorClicked, setDoorClicked]   = useState(false)
-  const [doorOpen,    setDoorOpen]      = useState(false)
-  const [canVisible,  setCanVisible]    = useState(false)
+  const { resetGun }   = useGun()
+
+  const [doorClicked,   setDoorClicked]   = useState(false)
+  const [doorOpen,      setDoorOpen]      = useState(false)
+  const [canVisible,    setCanVisible]    = useState(false)
   const [dialogVisible, setDialogVisible] = useState(false)
-  const [password,    setPassword]      = useState('')
-  const [shake,       setShake]         = useState(false)
-  const [fadeOut,     setFadeOut]       = useState(false)
+  const [password,      setPassword]      = useState('')
+  const [shake,         setShake]         = useState(false)
+  const [fadeOut,       setFadeOut]       = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Sequence: doorOpen → can slides in → dialog appears
@@ -35,10 +40,23 @@ export default function AdminDoor() {
     if (dialogVisible) setTimeout(() => inputRef.current?.focus(), 100)
   }, [dialogVisible])
 
+  // Close handler — resets state after reverse animation completes
+  const handleClose = () => {
+    setCanVisible(false)
+    setDialogVisible(false)
+    setTimeout(() => {
+      setDoorOpen(false)
+      setDoorClicked(false)
+    }, 50)
+  }
+
   const handleSubmit = () => {
     if (loginAdmin(password)) {
       setFadeOut(true)
-      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 400)
+      setTimeout(() => {
+        resetGun()
+        window.scrollTo({ top: 0, behavior: 'instant' as ScrollBehavior })
+      }, 400)
     } else {
       setShake(true)
       setTimeout(() => setShake(false), 600)
@@ -98,9 +116,11 @@ export default function AdminDoor() {
       <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
         <DoorScene
           doorClicked={doorClicked}
+          doorOpen={doorOpen}
           canVisible={canVisible}
           onDoorClick={() => setDoorClicked(true)}
           onDoorOpen={() => setDoorOpen(true)}
+          onClose={handleClose}
         />
 
         {/* Password dialog — appears after can slides in */}

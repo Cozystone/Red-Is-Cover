@@ -6,7 +6,6 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import ScrollReveal from '@/components/ui/ScrollReveal'
 import ProjectDetailModal from '@/components/ui/ProjectDetailModal'
 import { MOCK_PROJECTS } from '@/lib/projects'
 import type { Project, ProjectCategory } from '@/lib/types'
@@ -161,8 +160,9 @@ function CategoryShortcut({ cat, onClick }: { cat: typeof CATEGORIES[0]; onClick
   )
 }
 
-function AlbumCard({ project, categoryColor, onClick }: {
+function AlbumCard({ project, categoryColor, onClick, isAdmin, onEdit }: {
   project: Project; categoryColor: string; onClick: () => void
+  isAdmin?: boolean; onEdit?: () => void
 }) {
   const [hovered, setHovered] = useState(false)
   const STATUS_LABELS: Record<Project['status'], string> = {
@@ -181,8 +181,23 @@ function AlbumCard({ project, categoryColor, onClick }: {
         transform: hovered ? 'translateY(-2px)' : 'translateY(0)',
         transition: 'box-shadow 0.18s, transform 0.18s',
         borderRadius: '4px', overflow: 'hidden',
+        position: 'relative',
       }}
     >
+      {isAdmin && onEdit && (
+        <button
+          type="button"
+          onClick={e => { e.stopPropagation(); onEdit() }}
+          style={{
+            position: 'absolute', top: 8, right: 8,
+            background: 'rgba(0,0,0,0.65)', color: '#fff',
+            border: 'none', borderRadius: '3px',
+            fontSize: '9px', fontFamily: HV, fontWeight: 700,
+            letterSpacing: '0.12em', textTransform: 'uppercase',
+            padding: '3px 8px', cursor: 'pointer', zIndex: 2,
+          }}
+        >EDIT</button>
+      )}
       {project.image_url ? (
         <div style={{ position: 'relative', width: '100%', paddingTop: '66.67%', overflow: 'hidden' }}>
           <img src={project.image_url} alt={project.title} style={{
@@ -231,10 +246,11 @@ export default function Categories() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [kimailOpen,      setKimailOpen]      = useState(false)
   const [editorOpen,      setEditorOpen]      = useState(false)
+  const [editingProject,  setEditingProject]  = useState<Project | null>(null)
 
   // Lazy imports for admin-only components
   const [KimailCompose, setKimailCompose] = useState<React.ComponentType<{ onClose: () => void }> | null>(null)
-  const [AdminEditor,   setAdminEditor]   = useState<React.ComponentType<{ defaultCategory: ProjectCategory; onClose: () => void; onSaved: () => void }> | null>(null)
+  const [AdminEditor,   setAdminEditor]   = useState<React.ComponentType<{ defaultCategory: ProjectCategory; project?: Project; onClose: () => void; onSaved: () => void }> | null>(null)
 
   const openKimail = async () => {
     if (!KimailCompose) {
@@ -244,11 +260,12 @@ export default function Categories() {
     setKimailOpen(true)
   }
 
-  const openEditor = async () => {
+  const openEditor = async (project?: Project) => {
     if (!AdminEditor) {
       const mod = await import('@/components/ui/AdminEditor')
       setAdminEditor(() => mod.default)
     }
+    setEditingProject(project ?? null)
     setEditorOpen(true)
   }
 
@@ -281,17 +298,13 @@ export default function Categories() {
         paddingLeft: 'var(--page-margin)',
         paddingRight: 'var(--page-margin)',
       }}>
-        <ScrollReveal variant="label" delay={0}>
-          <p style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '10px', fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D91C1C', marginBottom: '24px' }}>
-            03 — SELECTED WORK
-          </p>
-        </ScrollReveal>
+        <p style={{ fontFamily: '"DM Sans", sans-serif', fontSize: '10px', fontWeight: 500, letterSpacing: '0.22em', textTransform: 'uppercase', color: '#D91C1C', marginBottom: '24px' }}>
+          03 — SELECTED WORK
+        </p>
 
-        <ScrollReveal delay={0.05}>
-          <h2 style={{ fontFamily: HV, fontSize: 'clamp(3rem, 8vw, 8rem)', fontWeight: 300, color: '#FAF8F5', lineHeight: 1.0, letterSpacing: '-0.04em', marginBottom: 'clamp(40px, 5vw, 64px)' }}>
-            Chapters.
-          </h2>
-        </ScrollReveal>
+        <h2 style={{ fontFamily: HV, fontSize: 'clamp(3rem, 8vw, 8rem)', fontWeight: 300, color: '#FAF8F5', lineHeight: 1.0, letterSpacing: '-0.04em', marginBottom: 'clamp(40px, 5vw, 64px)' }}>
+          Chapters.
+        </h2>
 
         {/* ── Chrome browser window ───────────────────────────────────── */}
         <div style={{ borderRadius: '8px 8px 0 0', overflow: 'hidden', boxShadow: '0 20px 80px rgba(0,0,0,0.5)', border: '1px solid rgba(0,0,0,0.3)' }}>
@@ -445,14 +458,14 @@ export default function Categories() {
                   ) : (
                     <div className="works-grid">
                       {filtered.map(project => (
-                        <AlbumCard key={project.id} project={project} categoryColor={activeCat?.color ?? '#D91C1C'} onClick={() => setSelectedProject(project)} />
+                        <AlbumCard key={project.id} project={project} categoryColor={activeCat?.color ?? '#D91C1C'} onClick={() => setSelectedProject(project)} isAdmin={isAdmin} onEdit={() => openEditor(project)} />
                       ))}
                     </div>
                   )}
 
                   {/* Admin: New Project FAB */}
                   {isAdmin && (
-                    <button type="button" onClick={openEditor}
+                    <button type="button" onClick={() => openEditor()}
                       style={{ position: 'fixed', bottom: '2rem', right: '2rem', fontFamily: HV, fontSize: '12px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#fff', backgroundColor: '#D91C1C', border: 'none', borderRadius: '24px', padding: '12px 20px', cursor: 'pointer', boxShadow: '0 4px 20px rgba(217,28,28,0.4)', zIndex: 200, outline: 'none' }}
                     >
                       ✦ New Project
@@ -475,7 +488,12 @@ export default function Categories() {
       {/* Admin editor */}
       <AnimatePresence>
         {editorOpen && AdminEditor && activeCat && (
-          <AdminEditor defaultCategory={activeCat.key} onClose={() => setEditorOpen(false)} onSaved={() => {}} />
+          <AdminEditor
+            defaultCategory={editingProject?.category ?? activeCat.key}
+            project={editingProject ?? undefined}
+            onClose={() => { setEditorOpen(false); setEditingProject(null) }}
+            onSaved={() => {}}
+          />
         )}
       </AnimatePresence>
 

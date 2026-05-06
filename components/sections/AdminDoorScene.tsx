@@ -1,12 +1,14 @@
 'use client'
 
 /* AdminDoorScene — R3F 3D 씬
-   room_door_animation.glb + campbells_can.glb */
+   room_door_animation.glb + campbells_can.glb
+   - 캔은 항상 렌더링; 문 뒤에 작게 있다가 doorOpen 시 앞으로 lerp
+   - 문 클릭 → 열림 애니메이션 (LoopOnce + clamp)
+   - 문/캔 재클릭 → 역재생으로 닫힘 */
 
 import { useRef, useEffect, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { useGLTF, useAnimations, Environment } from '@react-three/drei'
-import { motion } from 'framer-motion'
 import * as THREE from 'three'
 
 useGLTF.preload('/room-door.glb')
@@ -16,18 +18,42 @@ useGLTF.preload('/campbells-can.glb')
 
 function DoorModel({
   doorClicked,
+  doorOpen,
   onDoorClick,
   onDoorOpen,
+  onClose,
 }: {
   doorClicked: boolean
+  doorOpen:    boolean
   onDoorClick: () => void
   onDoorOpen:  () => void
+  onClose:     () => void
 }) {
-  const group = useRef<THREE.Group>(null!)
+  const group   = useRef<THREE.Group>(null!)
   const { scene, animations } = useGLTF('/room-door.glb')
   const { actions, names }    = useAnimations(animations, group)
-  const fired = useRef(false)
+  const fired   = useRef(false)
+  const closing = useRef(false)
 
+  // Clone once and apply warm wood material
+  const obj = useRef<THREE.Object3D | null>(null)
+  if (!obj.current) {
+    obj.current = scene.clone(true)
+    obj.current.traverse((child) => {
+      const mesh = child as THREE.Mesh
+      if (mesh.isMesh) {
+        const src = mesh.material as THREE.MeshStandardMaterial
+        const mat = src.clone()
+        mat.color.set('#8B5E3C')
+        mat.roughness = 0.75
+        mat.metalness = 0.05
+        mat.needsUpdate = true
+        mesh.material = mat
+      }
+    })
+  }
+
+  // Open: play animation forward
   useEffect(() => {
     if (!doorClicked || fired.current) return
     fired.current = true
@@ -35,23 +61,41 @@ function DoorModel({
     if (!action) { onDoorOpen(); return }
     action.setLoop(THREE.LoopOnce, 1)
     action.clampWhenFinished = true
+    action.timeScale = 1
     action.reset().play()
-
-    // Fire onDoorOpen after animation duration
     const duration = (action.getClip().duration ?? 2) * 1000
     setTimeout(onDoorOpen, duration)
   }, [doorClicked, actions, names, onDoorOpen])
 
-  const obj = scene.clone(true)
+  const triggerClose = () => {
+    if (closing.current) return
+    closing.current = true
+    const action = actions[names[0]]
+    if (!action) { onClose(); return }
+    action.paused = false
+    action.timeScale = -1
+    action.play()
+    const duration = (action.getClip().duration ?? 2) * 1000
+    setTimeout(() => {
+      closing.current = false
+      fired.current   = false
+      onClose()
+    }, duration)
+  }
+
+  const handleClick = () => {
+    if (!doorClicked)  { onDoorClick();   return }
+    if (doorOpen)      { triggerClose();  return }
+  }
 
   return (
     <group ref={group}>
       <primitive
-        object={obj}
+        object={obj.current}
         scale={1}
         position={[0, -1, 0]}
-        onClick={!doorClicked ? onDoorClick : undefined}
-        style={!doorClicked ? { cursor: 'pointer' } : {}}
+        onClick={handleClick}
+        style={{ cursor: doorOpen ? 'pointer' : doorClicked ? 'default' : 'pointer' }}
       />
     </group>
   )
@@ -59,21 +103,39 @@ function DoorModel({
 
 // ── Campbell's can ──────────────────────────────────────────────────────────
 
-function SoupCan({ visible }: { visible: boolean }) {
+function SoupCan({
+  visible,
+  onClose,
+}: {
+  visible:  boolean
+  onClose:  () => void
+}) {
   const { scene } = useGLTF('/campbells-can.glb')
   const ref = useRef<THREE.Group>(null!)
 
-  // Gentle idle bob
   useFrame(({ clock }) => {
-    if (!ref.current || !visible) return
-    ref.current.position.y = Math.sin(clock.getElapsedTime() * 0.8) * 0.04 - 0.5
+    if (!ref.current) return
+    const targetScale = visible ? 0.26 : 0.09
+    const targetZ     = visible ? 0.5  : -0.2
+    ref.current.scale.setScalar(
+      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.04)
+    )
+    ref.current.position.z = THREE.MathUtils.lerp(
+      ref.current.position.z, targetZ, 0.04
+    )
+    if (visible) {
+      ref.current.position.y = Math.sin(clock.getElapsedTime() * 0.8) * 0.04 - 0.88
+    }
   })
 
-  if (!visible) return null
-
   return (
-    <group ref={ref} position={[1.2, -0.5, 0.5]}>
-      <primitive object={scene.clone(true)} scale={0.8} />
+    <group ref={ref} position={[0.65, -0.88, -0.2]}>
+      <primitive
+        object={scene.clone(true)}
+        scale={0.09}
+        onClick={visible ? onClose : undefined}
+        style={visible ? { cursor: 'pointer' } : {}}
+      />
     </group>
   )
 }
@@ -82,12 +144,16 @@ function SoupCan({ visible }: { visible: boolean }) {
 
 interface Props {
   doorClicked: boolean
+  doorOpen:    boolean
   canVisible:  boolean
   onDoorClick: () => void
   onDoorOpen:  () => void
+  onClose:     () => void
 }
 
-export default function AdminDoorScene({ doorClicked, canVisible, onDoorClick, onDoorOpen }: Props) {
+export default function AdminDoorScene({
+  doorClicked, doorOpen, canVisible, onDoorClick, onDoorOpen, onClose,
+}: Props) {
   return (
     <div style={{ width: '100%', height: '100%', cursor: doorClicked ? 'default' : 'pointer' }}>
       <Canvas
@@ -95,13 +161,19 @@ export default function AdminDoorScene({ doorClicked, canVisible, onDoorClick, o
         gl={{ antialias: true }}
         style={{ background: 'transparent' }}
       >
-        <ambientLight intensity={0.4} />
-        <directionalLight position={[2, 4, 3]} intensity={1.2} />
-        <pointLight position={[-2, 2, 2]} intensity={0.6} color="#ffddaa" />
+        <ambientLight intensity={0.6} />
+        <directionalLight position={[2, 4, 3]} intensity={1.0} />
+        <pointLight position={[-2, 2, 2]} intensity={0.5} color="#ffddaa" />
 
         <Suspense fallback={null}>
-          <DoorModel doorClicked={doorClicked} onDoorClick={onDoorClick} onDoorOpen={onDoorOpen} />
-          <SoupCan visible={canVisible} />
+          <DoorModel
+            doorClicked={doorClicked}
+            doorOpen={doorOpen}
+            onDoorClick={onDoorClick}
+            onDoorOpen={onDoorOpen}
+            onClose={onClose}
+          />
+          <SoupCan visible={canVisible} onClose={onClose} />
           <Environment preset="city" />
         </Suspense>
       </Canvas>

@@ -28,6 +28,7 @@
   - 오른쪽 건물벽 '골목길' 간판 클릭 → 씬 체인:
       idle → clearing → liquid (LiquidOverlay) → whiteroom (WhiteRoomScene)
       → phonecall (PhoneCallScene)
+  - 골목길 클릭은 window.scrollY < innerHeight * 0.85 일 때만 활성화 (스크롤 중 오작동 방지)
 
 [PhoneCallScene] 서울 야경 + 간판 콜라주 + Canon AT-1 카메라
   - 카메라 클릭 → turning → viewfinder 모드
@@ -37,11 +38,16 @@
 
 [스크롤 이후 일반 섹션]
 PinterestBoard  → 마소니리 무드보드 그리드
-World           → "02 — WORLD" 인생 선언문 (건드리지 않음)
-Categories      → "03 — Chapters" 프로젝트 브라우저 (WorksBrowser)
-Archive         → "04 — VISUAL ARCHIVE" 크림 배경 아카이브
-Profile         → "05 — PROFILE" 다크 배경 프로필 도시에
-Contact         → "06 — CONTACT" 다크 배경 연락처
+World           → "02 — WORLD" 인생 선언문
+Categories      → "03" Windows Chrome 탭 UI — "Anseogle" 워드마크
+                   탭: Art/Fashion/Brand/Writing/Worldbuilding
+                   new-tab 뷰: Anseogle 로고 + 단축 아이콘 + Kimail 버튼
+                   isAdmin → "✦ New Project" FAB → AdminEditor 사이드패널
+Archive         → "04 — VISUAL ARCHIVE"
+Profile         → "05 — PROFILE"
+[AdminDoor]     → 비밀 섹션 (번호 없음): 문 GLB 클릭 → 열림 → Campbell 캔 등장
+                   → "What's The Password?" → "maurizio cattelan" → 관리자 모드 진입
+Contact         → "06 — CONTACT"
 ```
 
 ---
@@ -54,10 +60,11 @@ Contact         → "06 — CONTACT" 다크 배경 연락처
 | `app/layout.tsx` | 폰트(Cormorant Garamond, DM Sans), 메타데이터 |
 | `app/globals.css` | Tailwind v4 토큰, 커스텀 프로퍼티, 애니메이션 |
 | `lib/gunContext.tsx` | 총 인터랙션 상태머신 (idle→dropping→aiming→shattering→revealed) |
-| `lib/projects.ts` | MOCK_PROJECTS + Supabase CRUD |
+| `lib/adminContext.tsx` | 관리자 모드 상태 (비밀번호: "maurizio cattelan") |
+| `lib/projects.ts` | MOCK_PROJECTS + Supabase CRUD (createProject 포함) |
 | `lib/types.ts` | Project, ProjectCategory, ProjectStatus 타입 |
-| `lib/supabase.ts` | Supabase 싱글톤 (env 없으면 null) |
-| `components/ui/GolmokSign.tsx` | 골목길 이스터에그 + 씬 체인 트리거 |
+| `lib/supabase.ts` | Supabase 싱글톤 (env 없으면 null) + sendMessage() |
+| `components/ui/GolmokSign.tsx` | 골목길 이스터에그 + 씬 체인 트리거 (scrollY guard 포함) |
 | `components/ui/PhoneCallScene.tsx` | Canon AT-1 카메라 뷰파인더 씬 |
 | `components/ui/WineGlassScene.tsx` | 와인글라스 3D 씬 |
 | `components/ui/CigaretteScene.tsx` | 담배 3D 씬 |
@@ -65,22 +72,31 @@ Contact         → "06 — CONTACT" 다크 배경 연락처
 | `components/ui/GrassField.tsx` | 풀밭 배경 |
 | `components/ui/GunCanvas.tsx` | 총 3D 캔버스 |
 | `components/ui/GunOverlay.tsx` | 총 오버레이 UI |
-| `components/ui/KeychainNav.tsx` | 상단 고정 네비게이션 |
+| `components/ui/KeychainNav.tsx` | 상단 고정 네비 (isAdmin → ADMIN 브랜딩 + EXIT 버튼) |
 | `components/ui/CustomCursor.tsx` | 커스텀 커서 |
 | `components/ui/BackgroundField.tsx` | 배경 필드 |
 | `components/ui/LiquidOverlay.tsx` | 액체 전환 효과 |
 | `components/ui/ScrollReveal.tsx` | 스크롤 등장 애니메이션 |
+| `components/ui/KimailCompose.tsx` | Gmail 스타일 메일 컴포즈 패널 (Supabase messages 저장) |
+| `components/ui/AdminEditor.tsx` | 관리자 프로젝트 편집 사이드패널 (이미지 업로드 포함) |
+| `components/ui/ProjectDetailModal.tsx` | 프로젝트 상세 팝업 |
 | `components/sections/VideoHero.tsx` | 진입 씬 전체 |
 | `components/sections/Landing.tsx` | 빨간 방 랜딩 |
 | `components/sections/World.tsx` | 선언문 섹션 |
-| `components/sections/Categories.tsx` | WorksBrowser (프로젝트 탭+그리드) |
+| `components/sections/Categories.tsx` | WorksBrowser — Anseogle, 탭+그리드, Kimail, AdminFAB |
 | `components/sections/Archive.tsx` | 비주얼 아카이브 |
 | `components/sections/Profile.tsx` | 프로필 |
+| `components/sections/AdminDoor.tsx` | 비밀 관리자 입장 씬 (문 + Campbell 캔 + 비밀번호) |
+| `components/sections/AdminDoorScene.tsx` | R3F 캔버스: room-door.glb + campbells-can.glb |
 | `components/sections/Contact.tsx` | 연락처 |
 | `components/sections/PinterestBoard.tsx` | 핀터레스트 무드보드 |
-| `components/ui/ProjectDetailModal.tsx` | 프로젝트 상세 팝업 |
-| `public/` | 3D 모델(.glb), 오디오(.mp3), 이미지, hero.mp4 |
+| `public/room-door.glb` | 문 3D 모델 (애니메이션 포함) |
+| `public/campbells-can.glb` | Campbell 수프캔 3D 모델 |
+| `public/bookmarks/` | 북마크 파비콘 이미지 4장 |
 | `public/signs/` | 서울 간판 이미지 20장 |
+| `supabase/schema.sql` | DB 스키마 (projects, background_images, messages) |
+| `supabase/storage.sql` | Storage 버킷 + RLS 정책 |
+| `.env.local` | Supabase URL + anon key |
 
 ---
 
@@ -123,24 +139,49 @@ Contact         → "06 — CONTACT" 다크 배경 연락처
 - `components/sections/Categories.tsx` — 전면 교체 (WorksBrowser)
 - `components/ui/ProjectDetailModal.tsx` — 신규 생성
 
-**변경 내용:**
-- 기존: 카테고리 리스트 → 클릭 → overlay popup
-- 신규: 섹션 안에 브라우저 창 UI가 embedded
-  - 상단 탭 바 (Art & Visual / Fashion & Image / Brand & Concept / Writing & Thought / Worldbuilding)
-  - URL 바: `red-is-cover.world/work/{slug}` (탭에 따라 변경)
-  - 콘텐츠: CSS Grid 앨범 카드 (번개장터 스타일)
-  - 카드 클릭 → ProjectDetailModal 팝업
-- 테마: 브라우저 창 = 라이트(크림 #FAF8F5), 다크 섹션 안에 대비로 떠있는 구조
+**커밋:** 세션 1 끝 → `66e5112`
 
-**데이터:** `lib/projects.ts` MOCK_PROJECTS 그대로 사용, image_url 나중에 추가 예정
+---
 
-**롤백:** `git checkout components/sections/Categories.tsx` (커밋 `61d1aa3` 기준)
+### 세션 2 — 관리자 모드 + Kimail + AdminDoor + Supabase 연결 (2026-05-06)
+
+**목표:** 관리자 진입 씬, Kimail 메시지 시스템, Anseogle 리브랜딩, Supabase 완전 연결
+
+**신규 파일:**
+- `lib/adminContext.tsx` — 관리자 상태 컨텍스트
+- `components/sections/AdminDoor.tsx` — 비밀 섹션 (문 + 캔 + 비밀번호)
+- `components/sections/AdminDoorScene.tsx` — R3F 씬
+- `components/ui/KimailCompose.tsx` — Gmail 스타일 메일 컴포즈
+- `components/ui/AdminEditor.tsx` — 관리자 프로젝트 편집 사이드패널
+- `supabase/schema.sql` — DB 스키마 (messages 테이블 추가)
+- `supabase/storage.sql` — Storage 버킷 설정
+
+**수정 파일:**
+- `components/sections/Categories.tsx` — Anseogle 워드마크, 탭클릭 fix, Kimail, Admin FAB
+- `components/ui/KeychainNav.tsx` — ADMIN 브랜딩, EXIT 버튼
+- `app/page.tsx` — AdminProvider 추가, AdminDoor 삽입
+- `lib/supabase.ts` — sendMessage() 추가
+- `components/ui/GolmokSign.tsx` — scrollY guard (inHeroView)
+- `World.tsx`, `Archive.tsx`, `Profile.tsx`, `Contact.tsx`, `ProjectDetailModal.tsx` — Cormorant → Helvetica Neue
+
+**Supabase:**
+- 프로젝트 ref: `rigjdwdayvgkgxiwnxwm`
+- DB 테이블: `projects`, `background_images`, `messages`
+- Storage 버킷: `project-images` (public)
+- Vercel env 등록 완료
+
+**커밋 히스토리:**
+- `512f2c6` chore: add storage bucket setup SQL
+- `1281bbe` chore: add messages table + RLS policies to schema.sql
+- `1accd7c` feat: admin mode + AdminDoor 3D + Kimail + Anseogle + tab fix
+- `66e5112` feat: multiple UX fixes + Helvetica font + bookmark images (세션2 시작 기준)
 
 ---
 
 ## TODO (다음 세션)
 
 - [ ] 각 프로젝트에 image_url 추가 (`public/projects/` 폴더에 이미지 넣고 projects.ts 업데이트)
+- [ ] Kimail 전송 테스트 (messages 테이블 저장 확인)
+- [ ] AdminDoor 비밀번호 + 관리자 편집 E2E 테스트
 - [ ] Archive 섹션 재편 검토
-- [ ] Supabase 연결 (선택적)
 - [ ] 모바일 최적화 전체 점검

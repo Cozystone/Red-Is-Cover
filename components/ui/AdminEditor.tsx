@@ -1,18 +1,20 @@
 'use client'
 
-/* AdminEditor — 관리자 프로젝트 생성 사이드패널
-   우측에서 슬라이드인, 드래그앤드롭 이미지 업로드 */
+/* AdminEditor — 관리자 프로젝트 생성/편집 사이드패널
+   우측에서 슬라이드인, 드래그앤드롭 이미지 업로드
+   project prop이 있으면 edit 모드 (PATCH), 없으면 create 모드 (POST) */
 
 import { useState, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { createProject } from '@/lib/projects'
+import { motion } from 'framer-motion'
 import { getSupabase } from '@/lib/supabase'
-import type { ProjectCategory, ProjectStatus } from '@/lib/types'
+import type { Project, ProjectCategory, ProjectStatus } from '@/lib/types'
 
 const HV = '"Helvetica Neue", Helvetica, Arial, sans-serif'
+const ADMIN_PW = 'maurizio cattelan'
 
 interface Props {
   defaultCategory: ProjectCategory
+  project?:        Project
   onClose:         () => void
   onSaved:         () => void
 }
@@ -48,7 +50,7 @@ const inputStyle = {
 const labelStyle = {
   fontFamily:    HV,
   fontSize:      '10px',
-  fontWeight:    600,
+  fontWeight:    600 as const,
   letterSpacing: '0.12em',
   textTransform: 'uppercase' as const,
   color:         '#9aa0a6',
@@ -56,19 +58,21 @@ const labelStyle = {
   display:       'block',
 }
 
-export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props) {
-  const [title,       setTitle]       = useState('')
-  const [category,    setCategory]    = useState<ProjectCategory>(defaultCategory)
-  const [status,      setStatus]      = useState<ProjectStatus>('in_progress')
-  const [year,        setYear]        = useState(new Date().getFullYear().toString())
-  const [description, setDescription] = useState('')
-  const [concept,     setConcept]     = useState('')
-  const [tags,        setTags]        = useState('')
-  const [imageFile,   setImageFile]   = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
-  const [dragOver,    setDragOver]    = useState(false)
-  const [saving,      setSaving]      = useState(false)
-  const [error,       setError]       = useState<string | null>(null)
+export default function AdminEditor({ defaultCategory, project, onClose, onSaved }: Props) {
+  const isEdit = !!project
+
+  const [title,        setTitle]        = useState(project?.title       ?? '')
+  const [category,     setCategory]     = useState<ProjectCategory>(project?.category ?? defaultCategory)
+  const [status,       setStatus]       = useState<ProjectStatus>(project?.status     ?? 'in_progress')
+  const [year,         setYear]         = useState(project?.year        ?? new Date().getFullYear().toString())
+  const [description,  setDescription]  = useState(project?.description ?? '')
+  const [concept,      setConcept]      = useState(project?.concept     ?? '')
+  const [tags,         setTags]         = useState(project?.tags?.join(', ') ?? '')
+  const [imageFile,    setImageFile]    = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(project?.image_url ?? null)
+  const [dragOver,     setDragOver]     = useState(false)
+  const [saving,       setSaving]       = useState(false)
+  const [error,        setError]        = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFile = useCallback((file: File) => {
@@ -91,7 +95,9 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
     setSaving(true)
     setError(null)
     try {
-      let image_url: string | undefined
+      let image_url: string | undefined = project?.image_url
+
+      // Upload image if a new file was selected
       if (imageFile) {
         const sb = getSupabase()
         if (sb) {
@@ -105,7 +111,7 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
         }
       }
 
-      await createProject({
+      const payload = {
         title:         title.trim(),
         category,
         status,
@@ -114,9 +120,26 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
         concept:       concept.trim(),
         tags:          tags.split(',').map(t => t.trim()).filter(Boolean),
         image_url,
-        featured:      false,
-        display_order: 99,
+        featured:      project?.featured      ?? false,
+        display_order: project?.display_order ?? 99,
+        ...(isEdit ? { id: project!.id } : {}),
+      }
+
+      const method = isEdit ? 'PATCH' : 'POST'
+      const res = await fetch('/api/admin/projects', {
+        method,
+        headers: {
+          'Content-Type':    'application/json',
+          'x-admin-password': ADMIN_PW,
+        },
+        body: JSON.stringify(payload),
       })
+
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? `HTTP ${res.status}`)
+      }
+
       onSaved()
       onClose()
     } catch (e: unknown) {
@@ -156,7 +179,7 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
         flexShrink:     0,
       }}>
         <span style={{ fontFamily: HV, fontSize: '13px', fontWeight: 700, letterSpacing: '0.08em', color: '#202124' }}>
-          ✦ NEW PROJECT
+          {isEdit ? '✦ EDIT PROJECT' : '✦ NEW PROJECT'}
         </span>
         <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#5f6368', padding: '2px 6px' }}>
           ×
@@ -178,7 +201,6 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
               style={{
                 border:          `2px dashed ${dragOver ? '#D91C1C' : '#e0e0e0'}`,
                 borderRadius:    '4px',
-                padding:         '0',
                 cursor:          'pointer',
                 backgroundColor: dragOver ? 'rgba(217,28,28,0.04)' : '#f8f9fa',
                 transition:      'border-color 0.15s, background-color 0.15s',
@@ -259,11 +281,7 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
       </div>
 
       {/* Footer */}
-      <div style={{
-        padding:      '16px 20px',
-        borderTop:    '1px solid #e0e0e0',
-        flexShrink:   0,
-      }}>
+      <div style={{ padding: '16px 20px', borderTop: '1px solid #e0e0e0', flexShrink: 0 }}>
         <button
           onClick={handleSave}
           disabled={saving}
@@ -283,7 +301,7 @@ export default function AdminEditor({ defaultCategory, onClose, onSaved }: Props
             transition:      'background-color 0.2s',
           }}
         >
-          {saving ? 'Saving…' : 'Save Project'}
+          {saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Save Project'}
         </button>
       </div>
     </motion.div>
