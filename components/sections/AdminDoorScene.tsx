@@ -115,13 +115,13 @@ function SoupCan({ visible }: { visible: boolean }) {
 
     // 완전히 나온 후 살짝 bob
     if (visible && Math.abs(ref.current.position.z - TARGET_Z_FRONT) < 0.1) {
-      ref.current.position.y = -0.85 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
+      ref.current.position.y = -0.55 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
     }
   })
 
-  // scale 고정 0.20 — 문 뒤에서도 조금 보이고, 앞으로 오면 원근감으로 자연스럽게 커 보임
+  // scale 고정 0.14 — 문보다 작게, 로고가 앞을 보도록 Y축 90도 회전
   return (
-    <group ref={ref} position={[0.1, -0.85, TARGET_Z_BACK]} scale={[0.20, 0.20, 0.20]}>
+    <group ref={ref} position={[0.1, -0.55, TARGET_Z_BACK]} scale={[0.14, 0.14, 0.14]} rotation={[0, Math.PI / 2, 0]}>
       <primitive object={clonedCan} scale={0.8} />
     </group>
   )
