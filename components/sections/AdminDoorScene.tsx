@@ -129,6 +129,39 @@ function SoupCan({ visible }: { visible: boolean }) {
   )
 }
 
+// ── Door frame outline ───────────────────────────────────────────────────────
+// 문 테두리에 얇은 검은 선 (wall과 door 구분)
+
+function DoorOutline() {
+  const W  = 1.42   // 문 개구부 너비
+  const H  = 1.74   // 문 개구부 높이
+  const T  = 0.018  // 테두리 두께
+  const Z  = 0.02   // 벽면 바로 앞
+  const CX = 0
+  const CY = -0.13  // 중심 y (top≈0.74, bottom≈-1.0)
+
+  const mat = <meshBasicMaterial color="#1a1a1a" />
+  return (
+    <group>
+      {/* 위 */}
+      <mesh position={[CX, CY + H / 2, Z]}>
+        <planeGeometry args={[W + T * 2, T]} />
+        {mat}
+      </mesh>
+      {/* 왼 */}
+      <mesh position={[CX - W / 2, CY, Z]}>
+        <planeGeometry args={[T, H]} />
+        {mat}
+      </mesh>
+      {/* 오른 */}
+      <mesh position={[CX + W / 2, CY, Z]}>
+        <planeGeometry args={[T, H]} />
+        {mat}
+      </mesh>
+    </group>
+  )
+}
+
 // ── Wall decorations ─────────────────────────────────────────────────────────
 // 텍스처 배치 로드로 초기 지직거림 방지
 
@@ -204,6 +237,7 @@ export default function AdminDoorScene({
         <pointLight position={[-2, 2, 2]} intensity={0.4} color="#ffeecc" />
 
         <Suspense fallback={null}>
+          <DoorOutline />
           <WallDecorations />
           <DoorModel
             doorClicked={doorClicked}
