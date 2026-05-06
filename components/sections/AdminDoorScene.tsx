@@ -6,7 +6,7 @@
 
 import { useRef, useEffect, useMemo, Suspense } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useGLTF, useAnimations, Environment } from '@react-three/drei'
+import { useGLTF, useAnimations, Environment, useTexture } from '@react-three/drei'
 import * as THREE from 'three'
 
 useGLTF.preload('/room-door.glb')
@@ -128,6 +128,57 @@ function SoupCan({ visible }: { visible: boolean }) {
   )
 }
 
+// ── Wall decorations ─────────────────────────────────────────────────────────
+
+function PinnedPoster({
+  url, position, rotation = [0, 0, 0], width, height, transparent = false,
+}: {
+  url: string
+  position: [number, number, number]
+  rotation?: [number, number, number]
+  width: number
+  height: number
+  transparent?: boolean
+}) {
+  const texture = useTexture(url)
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Poster plane */}
+      <mesh>
+        <planeGeometry args={[width, height]} />
+        <meshStandardMaterial map={texture} transparent={transparent} alphaTest={0.05} />
+      </mesh>
+      {/* Pin — small sphere at top center */}
+      <mesh position={[0, height / 2 - 0.04, 0.015]}>
+        <sphereGeometry args={[0.022, 10, 10]} />
+        <meshStandardMaterial color="#CC2222" metalness={0.4} roughness={0.4} />
+      </mesh>
+    </group>
+  )
+}
+
+function WallDecorations() {
+  return (
+    <group>
+      {/* Left of door */}
+      <PinnedPoster url="/posters/fight-club.jpg"
+        position={[-1.45, 0.28, 0.02]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
+      <PinnedPoster url="/posters/eeaao.jpg"
+        position={[-2.25, -0.05, 0.02]} rotation={[0, 0, -0.07]} width={0.52} height={0.78} />
+
+      {/* Right of door */}
+      <PinnedPoster url="/posters/love-letter.jpg"
+        position={[1.25, 0.22, 0.02]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
+      <PinnedPoster url="/posters/virgil-abloh.jpg"
+        position={[1.95, -0.08, 0.02]} rotation={[0, 0, 0.06]}  width={0.58} height={0.58} />
+
+      {/* Off-White banner — above door */}
+      <PinnedPoster url="/posters/offwhite.png"
+        position={[0, 1.38, 0.02]} rotation={[0, 0, -0.02]} width={1.05} height={0.24} transparent />
+    </group>
+  )
+}
+
 // ── Scene wrapper ────────────────────────────────────────────────────────────
 
 interface Props {
@@ -156,6 +207,7 @@ export default function AdminDoorScene({
         <pointLight position={[-2, 2, 2]} intensity={0.4} color="#ffeecc" />
 
         <Suspense fallback={null}>
+          <WallDecorations />
           <DoorModel
             doorClicked={doorClicked}
             closeSignal={closeSignal}
