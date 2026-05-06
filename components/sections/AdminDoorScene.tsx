@@ -106,7 +106,7 @@ function SoupCan({ visible }: { visible: boolean }) {
   const TARGET_Z_BACK  = -1.5  // 문 뒤 (닫힌 상태)
   const TARGET_Z_FRONT = 0.6   // 문 앞으로 나온 위치
 
-  useFrame(({ clock, delta }) => {
+  useFrame(({ clock }, delta) => {
     if (!ref.current) return
 
     // delta 기반 lerp — 프레임레이트 무관하게 일정한 속도
