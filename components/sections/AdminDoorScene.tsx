@@ -103,26 +103,25 @@ function SoupCan({ visible }: { visible: boolean }) {
   const ref = useRef<THREE.Group>(null!)
   const clonedCan = useMemo(() => scene.clone(true), [scene])
 
+  const TARGET_Z_BACK  = -1.5  // 문 뒤 (닫힌 상태)
+  const TARGET_Z_FRONT = 0.6   // 문 앞으로 나온 위치
+
   useFrame(({ clock }) => {
     if (!ref.current) return
 
-    const targetScale = visible ? 0.18 : 0.05
-    const targetZ     = visible ? 0.1  : -1.5
+    // 스케일 고정 — Z 이동만으로 원근감 효과
+    const targetZ = visible ? TARGET_Z_FRONT : TARGET_Z_BACK
+    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, 0.04)
 
-    ref.current.scale.setScalar(
-      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.035)
-    )
-    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, 0.035)
-
-    // gentle idle bob when fully out
-    if (visible && Math.abs(ref.current.position.z - 0.1) < 0.1) {
+    // 완전히 나온 후 살짝 bob
+    if (visible && Math.abs(ref.current.position.z - TARGET_Z_FRONT) < 0.1) {
       ref.current.position.y = -0.85 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
     }
   })
 
-  // 문 프레임 중앙(x=0.1), 바닥 높이, 문 뒤에서 시작
+  // scale 고정 0.20 — 문 뒤에서도 조금 보이고, 앞으로 오면 원근감으로 자연스럽게 커 보임
   return (
-    <group ref={ref} position={[0.1, -0.85, -1.5]} scale={[0.05, 0.05, 0.05]}>
+    <group ref={ref} position={[0.1, -0.85, TARGET_Z_BACK]} scale={[0.20, 0.20, 0.20]}>
       <primitive object={clonedCan} scale={0.8} />
     </group>
   )
