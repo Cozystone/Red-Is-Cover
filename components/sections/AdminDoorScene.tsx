@@ -89,8 +89,8 @@ function DoorModel({
 }
 
 // ── Campbell's can ──────────────────────────────────────────────────────────
-// visible=false: 문 뒤 위쪽에 작게 (scale~0.05, z=-1.0, y=1.2)
-// visible=true:  앞으로 내려오며 커짐 (scale~0.18, z=0.2, y=-0.8)
+// visible=false: 문 뒤 바닥에 작게 (z=-1.5, 카메라에서 보이지 않음)
+// visible=true:  Z축으로만 앞으로 걸어나옴 (z → 0.1), 스케일 커짐
 
 function SoupCan({ visible }: { visible: boolean }) {
   const { scene } = useGLTF('/campbells-can.glb')
@@ -101,23 +101,22 @@ function SoupCan({ visible }: { visible: boolean }) {
     if (!ref.current) return
 
     const targetScale = visible ? 0.18 : 0.05
-    const targetY     = visible ? -0.80 : 1.2
-    const targetZ     = visible ? 0.15  : -1.0
+    const targetZ     = visible ? 0.1  : -1.5
 
     ref.current.scale.setScalar(
-      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.04)
+      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.035)
     )
-    const lerpedY = THREE.MathUtils.lerp(ref.current.position.y, targetY, 0.04)
-    const bob = visible && Math.abs(lerpedY - targetY) < 0.08
-      ? Math.sin(clock.getElapsedTime() * 0.9) * 0.03
-      : 0
-    ref.current.position.y = lerpedY + bob
-    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, 0.04)
+    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, 0.035)
+
+    // gentle idle bob when fully out
+    if (visible && Math.abs(ref.current.position.z - 0.1) < 0.1) {
+      ref.current.position.y = -0.85 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
+    }
   })
 
-  // x=0.5: door frame center; starts above/behind door
+  // 문 프레임 중앙, 바닥 높이, 문 뒤에서 시작
   return (
-    <group ref={ref} position={[0.5, 1.2, -1.0]} scale={[0.05, 0.05, 0.05]}>
+    <group ref={ref} position={[0.5, -0.85, -1.5]} scale={[0.05, 0.05, 0.05]}>
       <primitive object={clonedCan} scale={0.8} />
     </group>
   )
