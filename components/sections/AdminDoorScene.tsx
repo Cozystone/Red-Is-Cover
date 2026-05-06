@@ -135,7 +135,7 @@ function SoupCan({ visible }: { visible: boolean }) {
 function DoorOutline() {
   const W  = 1.42   // 문 개구부 너비
   const H  = 1.74   // 문 개구부 높이
-  const T  = 0.018  // 테두리 두께
+  const T  = 0.04   // 테두리 두께
   const Z  = 0.02   // 벽면 바로 앞
   const CX = 0
   const CY = -0.13  // 중심 y (top≈0.74, bottom≈-1.0)
