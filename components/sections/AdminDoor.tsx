@@ -24,6 +24,7 @@ export default function AdminDoor() {
   const [canVisible,    setCanVisible]    = useState(false)
   const [dialogVisible, setDialogVisible] = useState(false)
   const [closeSignal,   setCloseSignal]   = useState(0)
+  const [canKey,        setCanKey]        = useState(0)
   const [password,      setPassword]      = useState('')
   const [shake,         setShake]         = useState(false)
   const [fadeOut,       setFadeOut]       = useState(false)
@@ -48,6 +49,7 @@ export default function AdminDoor() {
     setTimeout(() => {
       setDoorOpen(false)
       setDoorClicked(false)
+      setCanKey(n => n + 1) // remount SoupCan so second open starts fresh
     }, 100)
   }
 
@@ -131,6 +133,7 @@ export default function AdminDoor() {
           doorClicked={doorClicked}
           doorOpen={doorOpen}
           canVisible={canVisible}
+          canKey={canKey}
           closeSignal={closeSignal}
           onDoorOpen={() => setDoorOpen(true)}
           onClose={handleClose}

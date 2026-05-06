@@ -25,8 +25,9 @@ function DoorModel({
   const group   = useRef<THREE.Group>(null!)
   const { scene, animations } = useGLTF('/room-door.glb')
   const { actions, names }    = useAnimations(animations, group)
-  const fired   = useRef(false)
-  const closing = useRef(false)
+  const fired        = useRef(false)
+  const closing      = useRef(false)
+  const halfDuration = useRef(1500) // ms — half of open+close clip
 
   // White material
   useEffect(() => {
@@ -45,40 +46,45 @@ function DoorModel({
     })
   }, [scene])
 
-  // Open animation
+  // Open: play first half of clip (open phase), then pause
+  // GLB clip is "open → close" in one cycle — pause at T/2 = fully open
   useEffect(() => {
     if (!doorClicked || fired.current) return
     fired.current = true
     const action = actions[names[0]]
     if (!action) { onDoorOpen(); return }
+
+    const clipMs = (action.getClip().duration ?? 3) * 1000
+    halfDuration.current = clipMs / 2
+
     action.setLoop(THREE.LoopOnce, 1)
     action.clampWhenFinished = true
     action.timeScale = 1
     action.reset().play()
-    const duration = (action.getClip().duration ?? 2) * 1000
+
+    // Pause at midpoint = door fully open
     setTimeout(() => {
       action.paused = true
       onDoorOpen()
-    }, duration)
+    }, halfDuration.current)
   }, [doorClicked, actions, names, onDoorOpen])
 
-  // Close animation triggered by closeSignal
+  // Close: resume from midpoint, play second half (close phase)
   useEffect(() => {
     if (closeSignal === 0 || closing.current) return
     closing.current = true
     const action = actions[names[0]]
     if (!action) { onClose(); return }
-    action.paused    = false
-    action.timeScale = -1
-    action.time      = action.getClip().duration
-    action.play()
-    const duration = (action.getClip().duration ?? 2) * 1000
+
+    action.paused = false
+    action.play() // resumes from where it was paused (midpoint)
+
     setTimeout(() => {
       action.paused   = true
       closing.current = false
       fired.current   = false
       onClose()
-    }, duration)
+    }, halfDuration.current)
   }, [closeSignal]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -114,9 +120,9 @@ function SoupCan({ visible }: { visible: boolean }) {
     }
   })
 
-  // 문 프레임 중앙, 바닥 높이, 문 뒤에서 시작
+  // 문 프레임 중앙(x=0.1), 바닥 높이, 문 뒤에서 시작
   return (
-    <group ref={ref} position={[0.5, -0.85, -1.5]} scale={[0.05, 0.05, 0.05]}>
+    <group ref={ref} position={[0.1, -0.85, -1.5]} scale={[0.05, 0.05, 0.05]}>
       <primitive object={clonedCan} scale={0.8} />
     </group>
   )
@@ -128,13 +134,14 @@ interface Props {
   doorClicked:  boolean
   doorOpen:     boolean
   canVisible:   boolean
+  canKey:       number
   closeSignal:  number
   onDoorOpen:   () => void
   onClose:      () => void
 }
 
 export default function AdminDoorScene({
-  doorClicked, canVisible, closeSignal, onDoorOpen, onClose,
+  doorClicked, canVisible, canKey, closeSignal, onDoorOpen, onClose,
 }: Props) {
   return (
     <div style={{ width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -155,7 +162,7 @@ export default function AdminDoorScene({
             onDoorOpen={onDoorOpen}
             onClose={onClose}
           />
-          <SoupCan visible={canVisible} />
+          <SoupCan key={canKey} visible={canVisible} />
           <Environment preset="city" />
         </Suspense>
       </Canvas>
