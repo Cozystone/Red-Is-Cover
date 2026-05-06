@@ -63,8 +63,10 @@ export default function AdminDoor() {
       return
     }
     if (doorOpen) {
-      // Signal DoorScene to play reverse animation
-      setCloseSignal(n => n + 1)
+      // 캔/다이얼로그 먼저 숨기고, 600ms 후 문 닫기 애니메이션
+      setDialogVisible(false)
+      setCanVisible(false)
+      setTimeout(() => setCloseSignal(n => n + 1), 600)
     }
   }
 
