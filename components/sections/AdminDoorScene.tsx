@@ -116,7 +116,7 @@ function SoupCan({ visible }: { visible: boolean }) {
     // 완전히 나온 후 살짝 bob
     if (visible && Math.abs(ref.current.position.z - TARGET_Z_FRONT) < 0.1) {
       ref.current.position.x = 0
-      ref.current.position.y = -0.35 + Math.sin(clock.getElapsedTime() * 0.9) * 0.025
+      ref.current.position.y = -0.35 + Math.sin(clock.getElapsedTime() * 0.9) * 0.185
     }
   })
 
@@ -150,7 +150,7 @@ function PinnedPoster({
       </mesh>
       {/* Pin — small sphere at top center */}
       <mesh position={[0, height / 2 - 0.04, 0.015]}>
-        <sphereGeometry args={[0.022, 10, 10]} />
+        <sphereGeometry args={[0.182, 10, 10]} />
         <meshStandardMaterial color="#CC2222" metalness={0.4} roughness={0.4} />
       </mesh>
     </group>
@@ -162,19 +162,19 @@ function WallDecorations() {
     <group>
       {/* Left of door */}
       <PinnedPoster url="/posters/fight-club.jpg"
-        position={[-1.45, 0.28, 0.02]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
+        position={[-1.45, 0.28, 0.18]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
       <PinnedPoster url="/posters/eeaao.jpg"
-        position={[-2.25, -0.05, 0.02]} rotation={[0, 0, -0.07]} width={0.52} height={0.78} />
+        position={[-2.25, -0.05, 0.18]} rotation={[0, 0, -0.07]} width={0.52} height={0.78} />
 
       {/* Right of door */}
       <PinnedPoster url="/posters/love-letter.jpg"
-        position={[1.25, 0.22, 0.02]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
+        position={[1.25, 0.22, 0.18]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
       <PinnedPoster url="/posters/virgil-abloh.jpg"
-        position={[1.95, -0.08, 0.02]} rotation={[0, 0, 0.06]}  width={0.58} height={0.58} />
+        position={[1.95, -0.08, 0.18]} rotation={[0, 0, 0.06]}  width={0.58} height={0.58} />
 
       {/* Off-White banner — above door */}
       <PinnedPoster url="/posters/offwhite.png"
-        position={[0, 1.38, 0.02]} rotation={[0, 0, -0.02]} width={1.05} height={0.24} transparent />
+        position={[0, 1.38, 0.18]} rotation={[0, 0, -0.18]} width={1.05} height={0.24} transparent />
     </group>
   )
 }

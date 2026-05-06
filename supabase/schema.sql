@@ -59,3 +59,17 @@ create policy "Anyone can send messages"
 
 create policy "Auth users can read messages"
   on messages for select using (auth.role() = 'authenticated');
+
+-- Archive pins table (visual archive / pinterest board)
+create table if not exists archive_pins (
+  id uuid default gen_random_uuid() primary key,
+  image_url text not null,
+  alt text default '',
+  display_order integer default 0,
+  created_at timestamp with time zone default now()
+);
+
+alter table archive_pins enable row level security;
+
+create policy "Public can read archive_pins"
+  on archive_pins for select using (true);
