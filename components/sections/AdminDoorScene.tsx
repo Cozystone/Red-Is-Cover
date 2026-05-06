@@ -146,14 +146,14 @@ function WallDecorations() {
   type P = { tex: THREE.Texture; pos: [number,number,number]; rotZ: number; w: number; h: number; pin?: boolean }
 
   const items: P[] = [
-    // 문 왼쪽
-    { tex: fc, pos: [-1.42,  0.26, 0.18], rotZ:  0.05,  w: 0.50, h: 0.75  },
-    { tex: ea, pos: [-1.98, -0.10, 0.18], rotZ: -0.06,  w: 0.50, h: 0.724 },
+    // 문 왼쪽 — 흰 벽 안쪽으로
+    { tex: fc, pos: [-1.30,  0.28, 0.18], rotZ:  0.05,  w: 0.44, h: 0.66  },
+    { tex: ea, pos: [-1.60, -0.12, 0.18], rotZ: -0.05,  w: 0.44, h: 0.637 },
     // Off-White 1:1 정사각형, 핀 없음
-    { tex: ow, pos: [-1.02,  0.64, 0.18], rotZ:  0.02,  w: 0.50, h: 0.50, pin: false },
-    // 문 오른쪽
-    { tex: ll, pos: [ 1.22,  0.24, 0.18], rotZ: -0.04,  w: 0.50, h: 0.75  },
-    { tex: va, pos: [ 1.76, -0.06, 0.18], rotZ:  0.05,  w: 0.48, h: 0.72  },
+    { tex: ow, pos: [-0.96,  0.62, 0.18], rotZ:  0.02,  w: 0.44, h: 0.44, pin: false },
+    // 문 오른쪽 — 흰 벽 안쪽으로
+    { tex: ll, pos: [ 1.12,  0.26, 0.18], rotZ: -0.04,  w: 0.44, h: 0.66  },
+    { tex: va, pos: [ 1.48, -0.08, 0.18], rotZ:  0.05,  w: 0.42, h: 0.63  },
   ]
 
   return (
