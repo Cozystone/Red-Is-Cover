@@ -44,8 +44,6 @@ export default function AdminDoor() {
 
   // Reset state after reverse animation completes
   const handleClose = () => {
-    setCanVisible(false)
-    setDialogVisible(false)
     setTimeout(() => {
       setDoorOpen(false)
       setDoorClicked(false)
@@ -63,8 +61,10 @@ export default function AdminDoor() {
       return
     }
     if (doorOpen) {
-      // Signal DoorScene to play reverse animation
-      setCloseSignal(n => n + 1)
+      // 캔/다이얼로그 먼저 숨기고, 600ms 후 문 닫기
+      setDialogVisible(false)
+      setCanVisible(false)
+      setTimeout(() => setCloseSignal(n => n + 1), 600)
     }
   }
 
