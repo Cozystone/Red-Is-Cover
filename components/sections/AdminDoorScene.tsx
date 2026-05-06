@@ -111,7 +111,7 @@ function SoupCan({ visible }: { visible: boolean }) {
 
     // delta 기반 lerp — 프레임레이트 무관하게 일정한 속도
     const targetZ = visible ? TARGET_Z_FRONT : TARGET_Z_BACK
-    const alpha = 1 - Math.pow(0.001, delta)
+    const alpha = 1 - Math.pow(0.3, delta)
     ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, alpha)
 
     // 완전히 나온 후 살짝 bob
