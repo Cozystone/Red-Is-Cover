@@ -28,7 +28,8 @@ export default function AdminDoor() {
   const [password,      setPassword]      = useState('')
   const [shake,         setShake]         = useState(false)
   const [fadeOut,       setFadeOut]       = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const inputRef     = useRef<HTMLInputElement>(null)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // doorOpen → can slides in → dialog appears
   useEffect(() => {
@@ -44,6 +45,7 @@ export default function AdminDoor() {
 
   // Reset state after reverse animation completes
   const handleClose = () => {
+    closeTimerRef.current = null
     setCanVisible(false)
     setDialogVisible(false)
     setTimeout(() => {
@@ -63,10 +65,11 @@ export default function AdminDoor() {
       return
     }
     if (doorOpen) {
-      // 캔/다이얼로그 먼저 숨기고, 600ms 후 문 닫기 애니메이션
+      if (closeTimerRef.current) return // 이미 닫히는 중 → 무시
       setDialogVisible(false)
       setCanVisible(false)
-      setTimeout(() => setCloseSignal(n => n + 1), 600)
+      // 캔이 문 뒤로 충분히 들어간 후(900ms) 문 닫기
+      closeTimerRef.current = setTimeout(() => setCloseSignal(n => n + 1), 900)
     }
   }
 
