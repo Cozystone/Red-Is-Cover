@@ -2,7 +2,7 @@
 
 /* AdminDoorScene — R3F 3D 씬
    room_door_animation.glb + campbells_can.glb
-   - 캔은 항상 렌더링; 문 뒤에 작게 있다가 doorOpen 시 앞으로 lerp
+   - 캔은 항상 렌더링; group scale=0.12로 시작, doorOpen 시 0.28로 lerp
    - 문 클릭 → 열림 애니메이션 (LoopOnce + clamp)
    - 문/캔 재클릭 → 역재생으로 닫힘 */
 
@@ -35,23 +35,23 @@ function DoorModel({
   const fired   = useRef(false)
   const closing = useRef(false)
 
-  // Clone once and apply warm wood material
-  const obj = useRef<THREE.Object3D | null>(null)
-  if (!obj.current) {
-    obj.current = scene.clone(true)
-    obj.current.traverse((child) => {
+  // Apply cream color to all door meshes after mount
+  useEffect(() => {
+    if (!group.current) return
+    group.current.traverse((child) => {
       const mesh = child as THREE.Mesh
-      if (mesh.isMesh) {
-        const src = mesh.material as THREE.MeshStandardMaterial
-        const mat = src.clone()
-        mat.color.set('#8B5E3C')
-        mat.roughness = 0.75
-        mat.metalness = 0.05
+      if (!mesh.isMesh) return
+      const mats = Array.isArray(mesh.material) ? mesh.material : [mesh.material]
+      mats.forEach((m) => {
+        const mat = m as THREE.MeshStandardMaterial
+        if (!mat?.color) return
+        mat.color.set('#FAF8F5')
+        mat.roughness = 0.85
+        mat.metalness = 0.0
         mat.needsUpdate = true
-        mesh.material = mat
-      }
+      })
     })
-  }
+  }, [])
 
   // Open: play animation forward
   useEffect(() => {
@@ -84,18 +84,18 @@ function DoorModel({
   }
 
   const handleClick = () => {
-    if (!doorClicked)  { onDoorClick();   return }
-    if (doorOpen)      { triggerClose();  return }
+    if (!doorClicked) { onDoorClick();  return }
+    if (doorOpen)     { triggerClose(); return }
   }
 
   return (
     <group ref={group}>
       <primitive
-        object={obj.current}
+        object={scene.clone(true)}
         scale={1}
         position={[0, -1, 0]}
         onClick={handleClick}
-        style={{ cursor: doorOpen ? 'pointer' : doorClicked ? 'default' : 'pointer' }}
+        style={{ cursor: doorOpen || !doorClicked ? 'pointer' : 'default' }}
       />
     </group>
   )
@@ -115,13 +115,15 @@ function SoupCan({
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    const targetScale = visible ? 0.26 : 0.09
-    const targetZ     = visible ? 0.5  : -0.2
+    // scale: small(behind door) → medium(approaching)
+    const targetScale = visible ? 0.28 : 0.12
+    // z: inside door → coming toward camera
+    const targetZ = visible ? 0.5 : -0.3
     ref.current.scale.setScalar(
-      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.04)
+      THREE.MathUtils.lerp(ref.current.scale.x, targetScale, 0.05)
     )
     ref.current.position.z = THREE.MathUtils.lerp(
-      ref.current.position.z, targetZ, 0.04
+      ref.current.position.z, targetZ, 0.05
     )
     if (visible) {
       ref.current.position.y = Math.sin(clock.getElapsedTime() * 0.8) * 0.04 - 0.88
@@ -129,10 +131,11 @@ function SoupCan({
   })
 
   return (
-    <group ref={ref} position={[0.65, -0.88, -0.2]}>
+    // position: inside the door frame opening; scale starts at 0.12 (tiny, behind door)
+    <group ref={ref} position={[0.65, -0.88, -0.3]} scale={[0.12, 0.12, 0.12]}>
       <primitive
         object={scene.clone(true)}
-        scale={0.09}
+        scale={0.8}
         onClick={visible ? onClose : undefined}
         style={visible ? { cursor: 'pointer' } : {}}
       />
