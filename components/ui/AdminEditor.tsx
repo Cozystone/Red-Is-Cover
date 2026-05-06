@@ -163,7 +163,7 @@ export default function AdminEditor({ defaultCategory, project, onClose, onSaved
         width:           'min(440px, 100vw)',
         backgroundColor: '#fff',
         boxShadow:       '-8px 0 40px rgba(0,0,0,0.18)',
-        zIndex:          400,
+        zIndex:          600,
         display:         'flex',
         flexDirection:   'column',
         overflow:        'hidden',
