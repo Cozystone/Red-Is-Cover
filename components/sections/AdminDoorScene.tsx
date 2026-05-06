@@ -185,20 +185,20 @@ function WallDecorations() {
     <group>
       {/* ── 문 왼쪽 ── */}
       <PinnedPoster url="/posters/fight-club.jpg"
-        position={[-1.45, 0.28, 0.05]} rotation={[0, 0, 0.05]}  width={0.52} height={0.78} />
+        position={[-1.45, 0.28, 0.18]} rotation={[0, 0, 0.18]}  width={0.52} height={0.78} />
       <PinnedPoster url="/posters/eeaao.jpg"
-        position={[-2.15, -0.08, 0.05]} rotation={[0, 0, -0.06]} width={0.52} height={0.78} />
+        position={[-2.15, -0.08, 0.18]} rotation={[0, 0, -0.06]} width={0.52} height={0.78} />
 
       {/* Off-White — 왼쪽 포스터들 위 빈공간, 핀 없음, 비율 유지 */}
       <FlatPoster url="/posters/offwhite.png"
-        position={[-1.80, 0.72, 0.05]} rotation={[0, 0, -0.01]}
+        position={[-1.80, 0.72, 0.18]} rotation={[0, 0, -0.01]}
         width={owW} height={owH} transparent />
 
       {/* ── 문 오른쪽 ── */}
       <PinnedPoster url="/posters/love-letter.jpg"
-        position={[1.25, 0.22, 0.05]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
+        position={[1.25, 0.22, 0.18]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
       <PinnedPoster url="/posters/virgil-abloh.jpg"
-        position={[1.88, -0.08, 0.05]} rotation={[0, 0, 0.05]}  width={0.58} height={0.58} />
+        position={[1.88, -0.08, 0.18]} rotation={[0, 0, 0.18]}  width={0.58} height={0.58} />
     </group>
   )
 }
