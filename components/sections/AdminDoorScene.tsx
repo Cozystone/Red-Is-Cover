@@ -106,12 +106,13 @@ function SoupCan({ visible }: { visible: boolean }) {
   const TARGET_Z_BACK  = -1.5  // 문 뒤 (닫힌 상태)
   const TARGET_Z_FRONT = 0.6   // 문 앞으로 나온 위치
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, delta }) => {
     if (!ref.current) return
 
-    // 스케일 고정 — Z 이동만으로 원근감 효과
+    // delta 기반 lerp — 프레임레이트 무관하게 일정한 속도
     const targetZ = visible ? TARGET_Z_FRONT : TARGET_Z_BACK
-    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, 0.04)
+    const alpha = 1 - Math.pow(0.001, delta)
+    ref.current.position.z = THREE.MathUtils.lerp(ref.current.position.z, targetZ, alpha)
 
     // 완전히 나온 후 살짝 bob
     if (visible && Math.abs(ref.current.position.z - TARGET_Z_FRONT) < 0.1) {
@@ -129,76 +130,48 @@ function SoupCan({ visible }: { visible: boolean }) {
 }
 
 // ── Wall decorations ─────────────────────────────────────────────────────────
-
-// 핀 꽂힌 포스터
-function PinnedPoster({
-  url, position, rotation = [0, 0, 0], width, height,
-}: {
-  url: string
-  position: [number, number, number]
-  rotation?: [number, number, number]
-  width: number
-  height: number
-}) {
-  const texture = useTexture(url)
-  return (
-    <group position={position} rotation={rotation}>
-      <mesh>
-        <planeGeometry args={[width, height]} />
-        <meshStandardMaterial map={texture} />
-      </mesh>
-      {/* 핀 — 아주 작은 구 */}
-      <mesh position={[0, height / 2 - 0.03, 0.012]}>
-        <sphereGeometry args={[0.010, 8, 8]} />
-        <meshStandardMaterial color="#CC2222" metalness={0.5} roughness={0.3} />
-      </mesh>
-    </group>
-  )
-}
-
-// 핀 없이 벽에 평평하게 붙인 포스터 (Off-White 등)
-function FlatPoster({
-  url, position, rotation = [0, 0, 0], width, height, transparent = false,
-}: {
-  url: string
-  position: [number, number, number]
-  rotation?: [number, number, number]
-  width: number
-  height: number
-  transparent?: boolean
-}) {
-  const texture = useTexture(url)
-  return (
-    <mesh position={position} rotation={rotation}>
-      <planeGeometry args={[width, height]} />
-      <meshStandardMaterial map={texture} transparent={transparent} alphaTest={0.05} />
-    </mesh>
-  )
-}
+// 텍스처 배치 로드로 초기 지직거림 방지
 
 function WallDecorations() {
-  // Off-White 이미지 비율 ≈ 4.25 : 1 (가로형 배너)
-  const owW = 0.88
-  const owH = owW / 4.25
+  const [fc, ll, ea, va, ow] = useTexture([
+    '/posters/fight-club.jpg',   // 1000×1500 → 2:3
+    '/posters/love-letter.jpg',  // 960×1440  → 2:3
+    '/posters/eeaao.jpg',        // 1000×1448 → 0.691
+    '/posters/virgil-abloh.jpg', // 183×275   → 2:3
+    '/posters/offwhite.png',     // 500×500   → 1:1
+  ])
+
+  const PIN = 0.010 // 핀 반지름
+
+  type P = { tex: THREE.Texture; pos: [number,number,number]; rotZ: number; w: number; h: number; pin?: boolean }
+
+  const items: P[] = [
+    // 문 왼쪽
+    { tex: fc, pos: [-1.42,  0.26, 0.18], rotZ:  0.05,  w: 0.50, h: 0.75  },
+    { tex: ea, pos: [-1.98, -0.10, 0.18], rotZ: -0.06,  w: 0.50, h: 0.724 },
+    // Off-White 1:1 정사각형, 핀 없음
+    { tex: ow, pos: [-1.02,  0.64, 0.18], rotZ:  0.02,  w: 0.50, h: 0.50, pin: false },
+    // 문 오른쪽
+    { tex: ll, pos: [ 1.22,  0.24, 0.18], rotZ: -0.04,  w: 0.50, h: 0.75  },
+    { tex: va, pos: [ 1.76, -0.06, 0.18], rotZ:  0.05,  w: 0.48, h: 0.72  },
+  ]
 
   return (
     <group>
-      {/* ── 문 왼쪽 ── */}
-      <PinnedPoster url="/posters/fight-club.jpg"
-        position={[-1.45, 0.28, 0.18]} rotation={[0, 0, 0.18]}  width={0.52} height={0.78} />
-      <PinnedPoster url="/posters/eeaao.jpg"
-        position={[-2.15, -0.08, 0.18]} rotation={[0, 0, -0.06]} width={0.52} height={0.78} />
-
-      {/* Off-White — 왼쪽 포스터들 위 빈공간, 핀 없음, 비율 유지 */}
-      <FlatPoster url="/posters/offwhite.png"
-        position={[-1.80, 0.72, 0.18]} rotation={[0, 0, -0.01]}
-        width={owW} height={owH} transparent />
-
-      {/* ── 문 오른쪽 ── */}
-      <PinnedPoster url="/posters/love-letter.jpg"
-        position={[1.25, 0.22, 0.18]} rotation={[0, 0, -0.04]} width={0.52} height={0.78} />
-      <PinnedPoster url="/posters/virgil-abloh.jpg"
-        position={[1.88, -0.08, 0.18]} rotation={[0, 0, 0.18]}  width={0.58} height={0.58} />
+      {items.map(({ tex, pos, rotZ, w, h, pin = true }, i) => (
+        <group key={i} position={pos} rotation={[0, 0, rotZ]}>
+          <mesh>
+            <planeGeometry args={[w, h]} />
+            <meshStandardMaterial map={tex} />
+          </mesh>
+          {pin && (
+            <mesh position={[0, h / 2 - 0.03, 0.012]}>
+              <sphereGeometry args={[PIN, 8, 8]} />
+              <meshStandardMaterial color="#CC2222" metalness={0.5} roughness={0.3} />
+            </mesh>
+          )}
+        </group>
+      ))}
     </group>
   )
 }
